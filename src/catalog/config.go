@@ -3,7 +3,7 @@ package catalog
 import "fmt"
 
 const (
-	DefaultGrpcPort = 18858
+	DefaultGrpcPort = 18857
 )
 
 type Config struct {

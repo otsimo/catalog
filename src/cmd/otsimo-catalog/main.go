@@ -17,6 +17,7 @@ var config *catalog.Config = catalog.NewConfig()
 const (
 	EnvDebugName    = "OTSIMO_CATALOG_DEBUG"
 	EnvGrpcPortName = "OTSIMO_CATALOG_GRPC_PORT"
+	EnvStorageName  = "OTSIMO_CATALOG_STORAGE"
 )
 
 func RunAction(c *cli.Context) {
@@ -65,7 +66,7 @@ func main() {
 
 	flags = []cli.Flag{
 		cli.IntFlag{Name: "grpc-port", Value: catalog.DefaultGrpcPort, Usage: "grpc server port", EnvVar: EnvGrpcPortName},
-		cli.StringFlag{Name: "storage, s", Value: "none", Usage: fmt.Sprintf("the storage driver. Available drivers: %s", strings.Join(dnames, ", ")), EnvVar: "OTSIMO_API_STORAGE"},
+		cli.StringFlag{Name: "storage, s", Value: "none", Usage: fmt.Sprintf("the storage driver. Available drivers: %s", strings.Join(dnames, ", ")), EnvVar: EnvStorageName},
 		cli.StringFlag{Name: "tls-cert-file", Value: "", Usage: "the server's certificate file for TLS connection"},
 		cli.StringFlag{Name: "tls-key-file", Value: "", Usage: "the server's private key file for TLS connection"},
 	}
@@ -75,7 +76,7 @@ func main() {
 	}
 
 	flags = append(flags, cli.BoolFlag{Name: "debug, d", Usage: "enable verbose log", EnvVar: EnvDebugName})
-
+	app.Flags = flags
 	app.Action = RunAction
 	app.Run(os.Args)
 }
