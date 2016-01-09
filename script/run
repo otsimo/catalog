@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source ./script/common
+
+if [ -f ./bin/$FILE_NAME ]; then
+   ./bin/$FILE_NAME --debug
+fi
+

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+source ./script/common
+
+if [ "$1" = "cross" ]; then
+
+    echo "Cross build for linux and osx"
+    env GOOS=linux GOARCH=amd64 gb build -ldflags "-X main.Version=$BUILD_VERSION"
+    env GOOS=darwin GOARCH=amd64 gb build -ldflags "-X main.Version=$BUILD_VERSION"
+
+elif [ "$1" = "docker" ]; then
+
+    echo "Cross build for linux amd64"
+    env GOOS=linux GOARCH=amd64 gb build -ldflags "-X main.Version=$BUILD_VERSION"
+
+else
+
+    echo "Build for" $(go env GOOS)
+    gb build -ldflags "-X main.Version=$BUILD_VERSION"
+
+fi
+
+# Rename files
+
+if [ -f ./bin/${APP_NAME} ]; then
+   mv ./bin/${APP_NAME} ./bin/${FILE_NAME}
+fi

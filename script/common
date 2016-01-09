@@ -1,0 +1,10 @@
+#!/bin/bash
+
+APP_NAME=otsimo-catalog
+DOCKER_IMAGE_NAME=otsimo/catalog
+NUMBER_OF_COMMIT=$(git rev-list HEAD --count)
+SHA_COMMIT=$(git rev-parse --short HEAD)
+BUILD_DATE=$(date +%Y%m%d-%H%M%S)
+APP_VERSION=${APP_VERSION:-$(< ./VERSION)}.$NUMBER_OF_COMMIT
+BUILD_VERSION=$APP_VERSION-$SHA_COMMIT-$BUILD_DATE
+FILE_NAME=${APP_NAME}-$(go env GOOS)-amd64

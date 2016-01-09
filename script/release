@@ -1,0 +1,15 @@
+#!/bin/bash
+
+source ./script/common
+
+DOCKER_OLD_IMAGE=$(docker images | grep $DOCKER_IMAGE_NAME | tail -n1 | awk '{print $3}')
+
+if [ ${#DOCKER_OLD_IMAGE} -gt 0 ]; then
+    docker rmi -f $DOCKER_OLD_IMAGE
+fi
+
+TAG_NAME=$DOCKER_IMAGE_NAME:$APP_VERSION
+
+docker build --rm -t $DOCKER_IMAGE_NAME .
+
+docker tag $DOCKER_IMAGE_NAME $TAG_NAME
