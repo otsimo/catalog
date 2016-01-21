@@ -1,0 +1,22 @@
+sudo: false
+language: go
+go:
+- 1.5.3
+install:
+- go get github.com/constabulary/gb/...
+script:
+- make test
+services:
+- mongodb
+addons:
+  apt:
+    sources:
+    - mongodb-3.2-precise
+    packages:
+    - mongodb-org-server
+notifications:
+  email: false
+  slack:
+    secure: t6CaK1jvyvSfzKqHy1RhFhYZFGMQdXDG5a3iJ4gZ14Ikqw5AVziJBn3hWYxAUdeLv0e0DraXImfywZBYDCA0VY+BP6Z1pfmT5vGwv4FmKiE8Xzi1M8oxQO4A4IprVpQSLYn54G1g8u56HfzB2rPy1o6mETB3uq9e7z30KiFzsjN94OV9ZKb7TAg4jr0Uo+tN4dJpIy//C1AraudRRkSMRSTRTUSDCgbouCrJ1/1+QJ0xqLKu1QItGyfSfnECkmd0MNDooKpcTh8OGGjImClmjZFe9P1fMhydGR2+VmPCF4VkA5J/wUb8IrMtn3Wc+nMwAfoDoHSesmS+MngIRZzMxfY+n/nTHjwCGi7ieA3pIqvEC8Z35QGF9Eur4hJ6IdC2Ez0jYeyzg+g5P+0jF/VFKj+pCYTynKEuaUP1l+Qrq7KjIJXT0xs7Wyat8nd57cQpzB+B+AWePDBg0VA9/1sHht9piCvi6s28Ls2F2dJokNAa4ETDPKILYHseibBRf9HmTeCwrSxEY5M1iHLUCVdqZvukr8UeQ1JnXXnbUwZnS97w4gUIOndp4BS8pH6VC5JLsVHF8HJ8oaxf8FI8VxfD6cT8NJOAD8jNf1fr39nw1BdMHQINIo6MNvjM1K/yrqr+pQTiRrwYZMiBOne53GRanHdlxO9zMvrppjbDEPLhjeE=
+before_script:
+- until nc -z localhost 27017; do echo Waiting for MongoDB; sleep 1; done

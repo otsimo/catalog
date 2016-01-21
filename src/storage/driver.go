@@ -6,15 +6,18 @@ import (
 	"models"
 
 	"github.com/codegangsta/cli"
+	"github.com/otsimo/api/apipb"
 	"gopkg.in/mgo.v2/bson"
 )
 
 type Driver interface {
 	Name() string
-	GetCurrent() (*models.Catalog, error)
 	GetById(bson.ObjectId) (*models.Catalog, error)
 	GetByTitle(string) (*models.Catalog, error)
-	List() ([]*models.Catalog, error)
+	List(apipb.CatalogListRequest) ([]*models.Catalog, error)
+	Put(*models.Catalog) error
+	Update(*models.Catalog) error
+	ChangeStatus(string, apipb.CatalogStatus) error
 }
 
 type RegisteredDriver struct {
@@ -48,3 +51,4 @@ func GetDriverNames() []string {
 func GetDriver(name string) *RegisteredDriver {
 	return drivers[name]
 }
+

@@ -3,10 +3,11 @@ package main
 import (
 	"models"
 
+	"fmt"
+	"time"
+
 	"github.com/BurntSushi/toml"
 	"github.com/otsimo/api/apipb"
-	"time"
-	"fmt"
 )
 
 type CatalogHeader struct {
@@ -37,7 +38,7 @@ func readCatalogFile(fpath string) (*CatalogFile, error) {
 }
 
 func toMilliseconds(s time.Time) int64 {
-	return s.Unix() * 1000 + int64(s.Nanosecond() / 1e6)
+	return s.Unix()*1000 + int64(s.Nanosecond()/1e6)
 }
 
 func (cf *CatalogFile) Request() (*apipb.Catalog, error) {

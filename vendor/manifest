@@ -14,10 +14,86 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/bgentry/speakeasy",
+			"repository": "https://github.com/bgentry/speakeasy",
+			"revision": "36e9cfdd690967f4f690c6edcc9ffacd006014a0",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/codegangsta/cli",
 			"repository": "https://github.com/codegangsta/cli",
 			"revision": "c31a7975863e7810c92e2e288a9ab074f9a88f29",
 			"branch": "master"
+		},
+		{
+			"importpath": "github.com/coreos/go-oidc/http",
+			"repository": "https://github.com/coreos/go-oidc",
+			"revision": "6039032c0b15517897116d333ead8edf38792437",
+			"branch": "master",
+			"path": "/http"
+		},
+		{
+			"importpath": "github.com/coreos/go-oidc/jose",
+			"repository": "https://github.com/coreos/go-oidc",
+			"revision": "6039032c0b15517897116d333ead8edf38792437",
+			"branch": "master",
+			"path": "/jose"
+		},
+		{
+			"importpath": "github.com/coreos/go-oidc/key",
+			"repository": "https://github.com/coreos/go-oidc",
+			"revision": "6039032c0b15517897116d333ead8edf38792437",
+			"branch": "master",
+			"path": "/key"
+		},
+		{
+			"importpath": "github.com/coreos/go-oidc/oauth2",
+			"repository": "https://github.com/coreos/go-oidc",
+			"revision": "6039032c0b15517897116d333ead8edf38792437",
+			"branch": "master",
+			"path": "/oauth2"
+		},
+		{
+			"importpath": "github.com/coreos/go-oidc/oidc",
+			"repository": "https://github.com/coreos/go-oidc",
+			"revision": "6039032c0b15517897116d333ead8edf38792437",
+			"branch": "master",
+			"path": "/oidc"
+		},
+		{
+			"importpath": "github.com/coreos/go-systemd/journal",
+			"repository": "https://github.com/coreos/go-systemd",
+			"revision": "2ed5b5012ccde5f057c197890a2c801295941149",
+			"branch": "master",
+			"path": "/journal"
+		},
+		{
+			"importpath": "github.com/coreos/pkg/capnslog",
+			"repository": "https://github.com/coreos/pkg",
+			"revision": "fa92df939cff437b00010275644a10882beaeca8",
+			"branch": "master",
+			"path": "/capnslog"
+		},
+		{
+			"importpath": "github.com/coreos/pkg/health",
+			"repository": "https://github.com/coreos/pkg",
+			"revision": "fa92df939cff437b00010275644a10882beaeca8",
+			"branch": "master",
+			"path": "/health"
+		},
+		{
+			"importpath": "github.com/coreos/pkg/httputil",
+			"repository": "https://github.com/coreos/pkg",
+			"revision": "fa92df939cff437b00010275644a10882beaeca8",
+			"branch": "master",
+			"path": "/httputil"
+		},
+		{
+			"importpath": "github.com/coreos/pkg/timeutil",
+			"repository": "https://github.com/coreos/pkg",
+			"revision": "fa92df939cff437b00010275644a10882beaeca8",
+			"branch": "master",
+			"path": "/timeutil"
 		},
 		{
 			"importpath": "github.com/golang/glog",
@@ -33,9 +109,21 @@
 			"path": "/proto"
 		},
 		{
+			"importpath": "github.com/jonboulle/clockwork",
+			"repository": "https://github.com/jonboulle/clockwork",
+			"revision": "ed104f61ea4877bea08af6f759805674861e968d",
+			"branch": "master"
+		},
+		{
+			"importpath": "github.com/mitchellh/go-homedir",
+			"repository": "https://github.com/mitchellh/go-homedir",
+			"revision": "d682a8f0cf139663a984ff12528da460ca963de9",
+			"branch": "master"
+		},
+		{
 			"importpath": "github.com/otsimo/api/apipb",
 			"repository": "https://github.com/otsimo/api",
-			"revision": "c96e39ed6a1ba13dbc4b1588abde1d0672e580c3",
+			"revision": "1132874a3800e55cffd3b6fd87b2d804e572b0a3",
 			"branch": "master",
 			"path": "/apipb"
 		},
