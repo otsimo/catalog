@@ -16,8 +16,8 @@
 
 	It has these top-level messages:
 		CatalogItem
-		CatalogRequest
-		CatalogResponse
+		CatalogPullRequest
+		Catalog
 		Event
 		Address
 		Profile

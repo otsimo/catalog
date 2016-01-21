@@ -11,7 +11,12 @@ type catalogGrpcServer struct {
 	server *Server
 }
 
-func (w *catalogGrpcServer) GetCatalog(ctx context.Context, in *apipb.CatalogRequest) (*apipb.CatalogResponse, error) {
+func (w *catalogGrpcServer) Pull(context.Context, *apipb.CatalogPullRequest) (*apipb.Catalog, error) {
+
+	return nil, errors.New("not implemented")
+}
+
+func (w *catalogGrpcServer) Push(context.Context, *apipb.Catalog) (*apipb.Response, error) {
 
 	return nil, errors.New("not implemented")
 }

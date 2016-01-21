@@ -3,11 +3,18 @@ package storage
 import (
 	"fmt"
 
+	"models"
+
 	"github.com/codegangsta/cli"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Driver interface {
 	Name() string
+	GetCurrent() (*models.Catalog, error)
+	GetById(bson.ObjectId) (*models.Catalog, error)
+	GetByTitle(string) (*models.Catalog, error)
+	List() ([]*models.Catalog, error)
 }
 
 type RegisteredDriver struct {

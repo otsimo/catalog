@@ -136,7 +136,6 @@ var _ grpc.ClientConn
 // Client API for WatchService service
 
 type WatchServiceClient interface {
-	// Watch
 	Emit(ctx context.Context, in *EmitRequest, opts ...grpc.CallOption) (*EmitResponse, error)
 	Watch(ctx context.Context, opts ...grpc.CallOption) (WatchService_WatchClient, error)
 }
@@ -192,7 +191,6 @@ func (x *watchServiceWatchClient) Recv() (*WatchResponse, error) {
 // Server API for WatchService service
 
 type WatchServiceServer interface {
-	// Watch
 	Emit(context.Context, *EmitRequest) (*EmitResponse, error)
 	Watch(WatchService_WatchServer) error
 }

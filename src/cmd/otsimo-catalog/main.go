@@ -54,8 +54,6 @@ func RunAction(c *cli.Context) {
 }
 
 func main() {
-	fmt.Println("Otsimo Catalog")
-
 	app := cli.NewApp()
 	app.Name = "otsimo-catalog"
 	app.Version = Version

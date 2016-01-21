@@ -3,8 +3,6 @@ package mongodb
 import (
 	"storage"
 
-	"time"
-
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	mgo "gopkg.in/mgo.v2"
@@ -34,7 +32,7 @@ func newMongoDriver(ctx *cli.Context) (storage.Driver, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Info("mongodb.go: connected to mongodb")
+	log.Debug("mongodb.go: connected to mongodb")
 	md := &MongoDBDriver{
 		Session: s,
 	}
@@ -47,9 +45,4 @@ type MongoDBDriver struct {
 
 func (d MongoDBDriver) Name() string {
 	return MongoDBDriverName
-}
-
-func millisecondsNow() int64 {
-	s := time.Now()
-	return s.Unix()*1000 + int64(s.Nanosecond()/1e6)
 }
