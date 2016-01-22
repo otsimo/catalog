@@ -51,4 +51,3 @@ func GetDriverNames() []string {
 func GetDriver(name string) *RegisteredDriver {
 	return drivers[name]
 }
-

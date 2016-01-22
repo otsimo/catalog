@@ -3,22 +3,24 @@ package main
 import (
 	"os"
 
+	"encoding/json"
+	"fmt"
+	"strings"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 	"github.com/otsimo/api/apipb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"fmt"
-	"encoding/json"
 )
 
 var (
-	Version string
+	Version     string
 	conn        *grpc.ClientConn
-	client apipb.CatalogServiceClient
-	cafile string
-	remoteUrl string = "127.0.0.1:18857"
+	client      apipb.CatalogServiceClient
+	cafile      string
+	remoteUrl   string = "127.0.0.1:18857"
 	accountHost string = "http://127.0.0.1:18856"
 )
 
@@ -109,7 +111,7 @@ func current(ctx *cli.Context) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	b, _ := json.MarshalIndent(res,"","  ")
+	b, _ := json.MarshalIndent(res, "", "  ")
 	fmt.Printf("Current Catalog:\n%s", string(b))
 }
 
@@ -131,15 +133,15 @@ func list(ctx *cli.Context) {
 	connect()
 	defer closeConn()
 	query := &apipb.CatalogListRequest{
-		HideExpired : ctx.Bool("hide-expired"),
-		Limit: int32(ctx.Int("limit")),
+		HideExpired: ctx.Bool("hide-expired"),
+		Limit:       int32(ctx.Int("limit")),
 	}
 	stat := ctx.String("status")
 	if stat == "draft" {
 		query.Status = apipb.CatalogListRequest_ONLY_DRAFT
-	}else if stat == "approved" {
+	} else if stat == "approved" {
 		query.Status = apipb.CatalogListRequest_ONLY_APPROVED
-	}else if stat == "both" {
+	} else if stat == "both" {
 		query.Status = apipb.CatalogListRequest_BOTH
 	}
 	res, err := client.List(context.Background(), query)
@@ -151,6 +153,25 @@ func list(ctx *cli.Context) {
 	for i, v := range res.Catalogs {
 		fmt.Printf("%d\t%s\t%s\n", (i + 1), v.Title, apipb.CatalogStatus_name[int32(v.Status)])
 	}
+}
+func withEnvs(prefix string, flags []cli.Flag) []cli.Flag {
+	var flgs []cli.Flag
+	for _, f := range flags {
+		env := ""
+		spr := strings.Split(f.GetName(), ",")
+		env = prefix + "_" + strings.ToUpper(strings.Replace(spr[0], "-", "_", -1))
+		switch v := f.(type) {
+		case cli.IntFlag:
+			flgs = append(flgs, cli.IntFlag{Name: v.Name, Value: v.Value, Usage: v.Usage, EnvVar: env})
+		case cli.StringFlag:
+			flgs = append(flgs, cli.StringFlag{Name: v.Name, Value: v.Value, Usage: v.Usage, EnvVar: env})
+		case cli.BoolFlag:
+			flgs = append(flgs, cli.BoolFlag{Name: v.Name, Usage: v.Usage, EnvVar: env})
+		default:
+			fmt.Println("unknown")
+		}
+	}
+	return flgs
 }
 
 func main() {
@@ -168,7 +189,7 @@ func main() {
 		cli.BoolFlag{Name: "debug, d", Usage: "enable verbose log"},
 	}
 
-	app.Flags = flags
+	app.Flags = withEnvs("OTSIMO_CATALOG", flags)
 	app.Before = initialize
 	app.EnableBashCompletion = true
 	app.Commands = []cli.Command{
@@ -208,7 +229,7 @@ func main() {
 			Flags: []cli.Flag{
 				cli.BoolFlag{Name: "hide-expired"},
 				cli.IntFlag{Name: "limit", Value: 100},
-				cli.StringFlag{Name:"status", Value:"both", Usage:"catalog status: both, draft, approved"},
+				cli.StringFlag{Name: "status", Value: "both", Usage: "catalog status: both, draft, approved"},
 			},
 		},
 	}
