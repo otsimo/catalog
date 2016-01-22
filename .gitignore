@@ -7,7 +7,7 @@
 _obj
 _test
 bin
-pkg
+./pkg
 .idea
 .vscode
 
