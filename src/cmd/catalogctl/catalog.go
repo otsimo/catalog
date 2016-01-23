@@ -19,8 +19,8 @@ type CatalogHeader struct {
 }
 
 type CatalogItem struct {
-	GameID   string `toml:"game_id,omitempty"`
-	GameName string `toml:"game_name,omitempty"`
+	GameID   string `toml:"game_id"`
+	GameName string `toml:"game_name"`
 }
 
 type CatalogFile struct {
