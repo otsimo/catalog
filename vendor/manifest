@@ -22,7 +22,7 @@
 		{
 			"importpath": "github.com/codegangsta/cli",
 			"repository": "https://github.com/codegangsta/cli",
-			"revision": "c31a7975863e7810c92e2e288a9ab074f9a88f29",
+			"revision": "f9cc3001e04f9783cb4ad08ca6791aa07134787c",
 			"branch": "master"
 		},
 		{
@@ -104,7 +104,7 @@
 		{
 			"importpath": "github.com/golang/protobuf/proto",
 			"repository": "https://github.com/golang/protobuf",
-			"revision": "2402d76f3d41f928c7902a765dfc872356dd3aad",
+			"revision": "5fc2294e655b78ed8a02082d37808d46c17d7e64",
 			"branch": "master",
 			"path": "/proto"
 		},
@@ -123,42 +123,42 @@
 		{
 			"importpath": "github.com/otsimo/api/apipb",
 			"repository": "https://github.com/otsimo/api",
-			"revision": "1132874a3800e55cffd3b6fd87b2d804e572b0a3",
+			"revision": "d11d8b932ca267fdf110b4723e83ec85656aee03",
 			"branch": "master",
 			"path": "/apipb"
 		},
 		{
 			"importpath": "golang.org/x/net/context",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
 			"branch": "master",
 			"path": "/context"
 		},
 		{
 			"importpath": "golang.org/x/net/http2",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
 			"branch": "master",
 			"path": "/http2"
 		},
 		{
 			"importpath": "golang.org/x/net/internal/timeseries",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
 			"branch": "master",
 			"path": "/internal/timeseries"
 		},
 		{
 			"importpath": "golang.org/x/net/trace",
 			"repository": "https://go.googlesource.com/net",
-			"revision": "b2ed34f6fc8d65cc6a090fb87692ea6b1162fddd",
+			"revision": "2e9cee70ee697e0a2ef894b560dda50dec7dff58",
 			"branch": "master",
 			"path": "/trace"
 		},
 		{
 			"importpath": "golang.org/x/oauth2",
 			"repository": "https://go.googlesource.com/oauth2",
-			"revision": "191c6170f61863159ab7a68f381291353957f566",
+			"revision": "8a57ed94ffd43444c0879fe75701732a38afc985",
 			"branch": "master"
 		},
 		{

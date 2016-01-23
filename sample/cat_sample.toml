@@ -4,22 +4,22 @@ visible_at = "2016-01-20T23:30"
 valid_days = 14
 
 [[featured]]
-game_id = "000000000000000000000001"
+game_name = "game-1"
 [[featured]]
-game_id = "000000000000000000000002"
+game_name = "game-2"
 [[featured]]
-game_id = "000000000000000000000003"
+game_name = "game-3"
 
 [[new]]
-game_id = "000000000000000000000001"
+game_name = "game-1"
 [[new]]
-game_id = "000000000000000000000002"
+game_name = "game-2"
 [[new]]
-game_id = "000000000000000000000003"
+game_name = "game-3"
 
 [[popular]]
-game_id = "000000000000000000000001"
+game_name = "game-1"
 [[popular]]
-game_id = "000000000000000000000002"
+game_name = "game-2"
 [[popular]]
-game_id = "000000000000000000000003"
+game_name = "game-3"

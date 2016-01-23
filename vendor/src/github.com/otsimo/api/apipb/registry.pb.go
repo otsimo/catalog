@@ -25,6 +25,7 @@ var _ grpc.ClientConn
 // Client API for RegistryService service
 
 type RegistryServiceClient interface {
+	Get(ctx context.Context, in *GetGameByNameRequest, opts ...grpc.CallOption) (*Game, error)
 	// Publish tries to create a new GameRelease by given manifest
 	Publish(ctx context.Context, in *GameManifest, opts ...grpc.CallOption) (*PublishResponse, error)
 	// ChangeReleaseState changes state of a release, If user is admin than s/he can change
@@ -46,6 +47,15 @@ type registryServiceClient struct {
 
 func NewRegistryServiceClient(cc *grpc.ClientConn) RegistryServiceClient {
 	return &registryServiceClient{cc}
+}
+
+func (c *registryServiceClient) Get(ctx context.Context, in *GetGameByNameRequest, opts ...grpc.CallOption) (*Game, error) {
+	out := new(Game)
+	err := grpc.Invoke(ctx, "/apipb.RegistryService/Get", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *registryServiceClient) Publish(ctx context.Context, in *GameManifest, opts ...grpc.CallOption) (*PublishResponse, error) {
@@ -128,6 +138,7 @@ func (c *registryServiceClient) ListGames(ctx context.Context, in *ListGamesRequ
 // Server API for RegistryService service
 
 type RegistryServiceServer interface {
+	Get(context.Context, *GetGameByNameRequest) (*Game, error)
 	// Publish tries to create a new GameRelease by given manifest
 	Publish(context.Context, *GameManifest) (*PublishResponse, error)
 	// ChangeReleaseState changes state of a release, If user is admin than s/he can change
@@ -145,6 +156,18 @@ type RegistryServiceServer interface {
 
 func RegisterRegistryServiceServer(s *grpc.Server, srv RegistryServiceServer) {
 	s.RegisterService(&_RegistryService_serviceDesc, srv)
+}
+
+func _RegistryService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(GetGameByNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(RegistryServiceServer).Get(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func _RegistryService_Publish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
@@ -232,6 +255,10 @@ var _RegistryService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "apipb.RegistryService",
 	HandlerType: (*RegistryServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Get",
+			Handler:    _RegistryService_Get_Handler,
+		},
 		{
 			MethodName: "Publish",
 			Handler:    _RegistryService_Publish_Handler,

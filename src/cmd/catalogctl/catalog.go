@@ -8,6 +8,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/otsimo/api/apipb"
+	"golang.org/x/net/context"
+	"github.com/Sirupsen/logrus"
 )
 
 type CatalogHeader struct {
@@ -17,7 +19,8 @@ type CatalogHeader struct {
 }
 
 type CatalogItem struct {
-	GameID string `toml:"game_id"`
+	GameID   string `toml:"game_id,omitempty"`
+	GameName string `toml:"game_name,omitempty"`
 }
 
 type CatalogFile struct {
@@ -26,6 +29,18 @@ type CatalogFile struct {
 	New             []CatalogItem `toml:"new"`
 	Popular         []CatalogItem `toml:"popular"`
 	RecentlyUpdated []CatalogItem `toml:"updated"`
+}
+
+func (c*CatalogItem)GetID() string {
+	if c.GameID == "" {
+		g, err := registryClient.Get(context.Background(), &apipb.GetGameByNameRequest{UniqueName:c.GameName})
+		if err != nil {
+			logrus.Fatalf("failed to get game by unique name (=%s),error=%+v", c.GameName, err)
+		}
+		g.To12bytesId()
+		c.GameID = g.Id.Hex()
+	}
+	return c.GameID
 }
 
 func readCatalogFile(fpath string) (*CatalogFile, error) {
@@ -38,7 +53,7 @@ func readCatalogFile(fpath string) (*CatalogFile, error) {
 }
 
 func toMilliseconds(s time.Time) int64 {
-	return s.Unix()*1000 + int64(s.Nanosecond()/1e6)
+	return s.Unix() * 1000 + int64(s.Nanosecond() / 1e6)
 }
 
 func (cf *CatalogFile) Request() (*apipb.Catalog, error) {
@@ -58,28 +73,28 @@ func (cf *CatalogFile) Request() (*apipb.Catalog, error) {
 
 	for i, v := range cf.Featured {
 		req.Items = append(req.Items, &apipb.CatalogItem{
-			GameId:   v.GameID,
+			GameId:   v.GetID(),
 			Index:    int32(i),
 			Category: apipb.CatalogCategory_FEATURED,
 		})
 	}
 	for i, v := range cf.New {
 		req.Items = append(req.Items, &apipb.CatalogItem{
-			GameId:   v.GameID,
+			GameId:   v.GetID(),
 			Index:    int32(i),
 			Category: apipb.CatalogCategory_NEW,
 		})
 	}
 	for i, v := range cf.Popular {
 		req.Items = append(req.Items, &apipb.CatalogItem{
-			GameId:   v.GameID,
+			GameId:   v.GetID(),
 			Index:    int32(i),
 			Category: apipb.CatalogCategory_POPULAR,
 		})
 	}
 	for i, v := range cf.RecentlyUpdated {
 		req.Items = append(req.Items, &apipb.CatalogItem{
-			GameId:   v.GameID,
+			GameId:   v.GetID(),
 			Index:    int32(i),
 			Category: apipb.CatalogCategory_RECENTLY_UPDATED,
 		})

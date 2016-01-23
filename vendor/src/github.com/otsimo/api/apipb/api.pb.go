@@ -44,6 +44,7 @@
 		ValidateRequest
 		IndexRequest
 		SearchResult
+		GetGameByNameRequest
 		ListGamesRequest
 		ListGamesResponse
 		SearchRequest

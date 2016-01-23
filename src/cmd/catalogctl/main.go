@@ -16,15 +16,18 @@ import (
 )
 
 var (
-	Version     string
-	conn        *grpc.ClientConn
-	client      apipb.CatalogServiceClient
-	cafile      string
-	remoteUrl   string = "127.0.0.1:18857"
-	accountHost string = "http://127.0.0.1:18856"
+	Version string
+	catalogConn        *grpc.ClientConn
+	registryConn        *grpc.ClientConn
+	catalogClient apipb.CatalogServiceClient
+	registryClient apipb.RegistryServiceClient
+	cafile string
+	remoteUrl string = "catalog.otsimo.com"
+	registryUrl string = "registry.otsimo.com"
+	accountHost string = "https://accounts.otsimo.com"
 )
 
-func connect() {
+func connect(connect2registry bool) {
 	var opts []grpc.DialOption
 	jwtCreds := NewOauthAccess(config())
 	if len(cafile) > 0 {
@@ -39,18 +42,30 @@ func connect() {
 		opts = append(opts, grpc.WithInsecure())
 	}
 	opts = append(opts, grpc.WithPerRPCCredentials(&jwtCreds))
-	conn, err := grpc.Dial(remoteUrl, opts...)
-
+	var err error
+	catalogConn, err = grpc.Dial(remoteUrl, opts...)
 	if err != nil {
 		log.Fatalf("main.go: Error while connection to catalog service %v\n", err)
 	}
-	client = apipb.NewCatalogServiceClient(conn)
+	catalogClient = apipb.NewCatalogServiceClient(catalogConn)
+
+	if connect2registry {
+		registryConn, err = grpc.Dial(registryUrl, opts...)
+		if err != nil {
+			log.Fatalf("main.go: Error while connection to registry service %v\n", err)
+		}
+		registryClient = apipb.NewRegistryServiceClient(registryConn)
+	}
 }
 
 func closeConn() {
-	if conn != nil {
-		conn.Close()
-		conn = nil
+	if catalogConn != nil {
+		catalogConn.Close()
+		catalogConn = nil
+	}
+	if registryConn != nil {
+		registryConn.Close()
+		registryConn = nil
 	}
 }
 
@@ -69,6 +84,7 @@ func initialize(ctx *cli.Context) error {
 	cafile = ctx.String("tls-ca-file")
 	remoteUrl = ctx.String("url")
 	accountHost = ctx.String("auth")
+	registryUrl = ctx.String("registry")
 	return nil
 }
 
@@ -80,13 +96,15 @@ func push(ctx *cli.Context) {
 	if err != nil {
 		log.Fatalln("error while reading catalog file, error=", err)
 	}
+	connect(true)
+	defer closeConn()
+
 	r, err := cf.Request()
 	if err != nil {
 		log.Fatalln("error while creating push catalog request, error=", err)
 	}
-	connect()
-	defer closeConn()
-	resp, err := client.Push(context.Background(), r)
+
+	resp, err := catalogClient.Push(context.Background(), r)
 	if err != nil {
 		log.Fatalln("response returned with error=", err)
 	}
@@ -101,13 +119,13 @@ func validate(ctx *cli.Context) {
 	if err != nil {
 		log.Fatalln("error while reading catalog file, error:", err)
 	}
-	log.Info("catalog is valid")
+	fmt.Println("catalog is valid")
 }
 
 func current(ctx *cli.Context) {
-	connect()
+	connect(false)
 	defer closeConn()
-	res, err := client.Pull(context.Background(), &apipb.CatalogPullRequest{})
+	res, err := catalogClient.Pull(context.Background(), &apipb.CatalogPullRequest{})
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -116,13 +134,13 @@ func current(ctx *cli.Context) {
 }
 
 func approve(ctx *cli.Context) {
-	connect()
+	connect(false)
 	defer closeConn()
 	if !ctx.Args().Present() {
 		log.Fatalln("enter a valid catalog title")
 	}
 	title := ctx.Args().First()
-	_, err := client.Approve(context.Background(), &apipb.CatalogApproveRequest{Title: title})
+	_, err := catalogClient.Approve(context.Background(), &apipb.CatalogApproveRequest{Title: title})
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -130,7 +148,7 @@ func approve(ctx *cli.Context) {
 }
 
 func list(ctx *cli.Context) {
-	connect()
+	connect(false)
 	defer closeConn()
 	query := &apipb.CatalogListRequest{
 		HideExpired: ctx.Bool("hide-expired"),
@@ -144,7 +162,7 @@ func list(ctx *cli.Context) {
 	} else if stat == "both" {
 		query.Status = apipb.CatalogListRequest_BOTH
 	}
-	res, err := client.List(context.Background(), query)
+	res, err := catalogClient.List(context.Background(), query)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -185,11 +203,12 @@ func main() {
 	flags = []cli.Flag{
 		cli.StringFlag{Name: "url, u", Value: remoteUrl, Usage: "remote server url"},
 		cli.StringFlag{Name: "auth", Value: accountHost, Usage: "otsimo accounts url"},
+		cli.StringFlag{Name: "registry", Value: registryUrl, Usage: "otsimo regitry service url"},
 		cli.StringFlag{Name: "tls-ca-file", Value: "", Usage: "the server's certificate file for TLS connection"},
 		cli.BoolFlag{Name: "debug, d", Usage: "enable verbose log"},
 	}
 
-	app.Flags = withEnvs("OTSIMO_CATALOG", flags)
+	app.Flags = withEnvs("CATALOGCTL", flags)
 	app.Before = initialize
 	app.EnableBashCompletion = true
 	app.Commands = []cli.Command{

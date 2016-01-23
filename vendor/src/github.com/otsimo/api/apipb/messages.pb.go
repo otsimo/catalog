@@ -22,17 +22,20 @@ var _ = math.Inf
 type Gender int32
 
 const (
-	Gender_MALE   Gender = 0
-	Gender_FEMALE Gender = 1
+	Gender_UNKNOWN Gender = 0
+	Gender_MALE    Gender = 1
+	Gender_FEMALE  Gender = 2
 )
 
 var Gender_name = map[int32]string{
-	0: "MALE",
-	1: "FEMALE",
+	0: "UNKNOWN",
+	1: "MALE",
+	2: "FEMALE",
 }
 var Gender_value = map[string]int32{
-	"MALE":   0,
-	"FEMALE": 1,
+	"UNKNOWN": 0,
+	"MALE":    1,
+	"FEMALE":  2,
 }
 
 func (x Gender) String() string {
@@ -396,6 +399,14 @@ type SearchResult struct {
 func (m *SearchResult) Reset()         { *m = SearchResult{} }
 func (m *SearchResult) String() string { return proto.CompactTextString(m) }
 func (*SearchResult) ProtoMessage()    {}
+
+type GetGameByNameRequest struct {
+	UniqueName string `protobuf:"bytes,1,opt,name=unique_name,proto3" json:"unique_name,omitempty"`
+}
+
+func (m *GetGameByNameRequest) Reset()         { *m = GetGameByNameRequest{} }
+func (m *GetGameByNameRequest) String() string { return proto.CompactTextString(m) }
+func (*GetGameByNameRequest) ProtoMessage()    {}
 
 type ListGamesRequest struct {
 	State RequestReleaseState `protobuf:"varint,1,opt,name=state,proto3,enum=apipb.RequestReleaseState" json:"state,omitempty"`
@@ -1554,6 +1565,30 @@ func (m *SearchResult) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *GetGameByNameRequest) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *GetGameByNameRequest) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.UniqueName) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintMessages(data, i, uint64(len(m.UniqueName)))
+		i += copy(data[i:], m.UniqueName)
+	}
+	return i, nil
+}
+
 func (m *ListGamesRequest) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -2360,6 +2395,16 @@ func (m *SearchResult) Size() (n int) {
 	}
 	if m.Score != 0 {
 		n += 9
+	}
+	return n
+}
+
+func (m *GetGameByNameRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.UniqueName)
+	if l > 0 {
+		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
 }
@@ -6244,6 +6289,85 @@ func (m *SearchResult) Unmarshal(data []byte) error {
 			v |= uint64(data[iNdEx-2]) << 48
 			v |= uint64(data[iNdEx-1]) << 56
 			m.Score = float64(math.Float64frombits(v))
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessages(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetGameByNameRequest) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessages
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetGameByNameRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetGameByNameRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UniqueName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UniqueName = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMessages(data[iNdEx:])
