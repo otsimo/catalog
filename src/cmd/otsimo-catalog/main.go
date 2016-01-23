@@ -48,6 +48,7 @@ func RunAction(c *cli.Context) {
 	}
 
 	server := catalog.NewServer(config, s)
+
 	ch := server.Oidc.SyncProviderConfig(config.AuthDiscovery)
 	defer func() {
 		// stop the background process

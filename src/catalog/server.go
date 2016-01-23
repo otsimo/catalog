@@ -1,18 +1,15 @@
 package catalog
 
 import (
+	"errors"
+	"fmt"
+	"models"
 	"net"
 	"os"
 	"storage"
 
-	pb "github.com/otsimo/api/apipb"
-
-	"errors"
-	"models"
-
-	"fmt"
-
 	log "github.com/Sirupsen/logrus"
+	pb "github.com/otsimo/api/apipb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
@@ -65,6 +62,7 @@ func NewServer(config *Config, driver storage.Driver) *Server {
 		Config:  config,
 		Storage: driver,
 	}
+	log.Debugln("Creating new oidc client discovery=", config.AuthDiscovery)
 	c, err := NewOIDCClient(config.ClientID, config.ClientSecret, config.AuthDiscovery)
 	if err != nil {
 		log.Fatal("Unable to create Oidc client", err)
