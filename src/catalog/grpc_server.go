@@ -15,6 +15,7 @@ type catalogGrpcServer struct {
 }
 
 func (w *catalogGrpcServer) Pull(ctx context.Context, in *apipb.CatalogPullRequest) (*apipb.Catalog, error) {
+	logrus.Infof("grpc_server.go: pull %+v", in)
 	return w.server.Current()
 }
 
