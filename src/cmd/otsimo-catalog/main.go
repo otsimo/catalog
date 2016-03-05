@@ -103,6 +103,8 @@ func main() {
 	flags = append(flags, cli.BoolFlag{Name: "debug, d", Usage: "enable verbose log", EnvVar: "OTSIMO_CATALOG_DEBUG"})
 	app.Flags = flags
 	app.Action = RunAction
+    
+    log.Infoln("running", app.Name, "version:", app.Version)
 	app.Run(os.Args)
 }
 
