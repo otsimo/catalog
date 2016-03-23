@@ -110,6 +110,13 @@
 			"path": "/proto/testdata"
 		},
 		{
+			"importpath": "github.com/gogo/protobuf/sortkeys",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "4168943e65a2802828518e95310aeeed6d84c4e5",
+			"branch": "master",
+			"path": "/sortkeys"
+		},
+		{
 			"importpath": "github.com/golang/glog",
 			"repository": "https://github.com/golang/glog",
 			"revision": "fca8c8854093a154ff1eb580aae10276ad6b1b5f",
