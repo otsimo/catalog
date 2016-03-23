@@ -10,6 +10,9 @@ func (c *Child) To24bytesId() {
 	if len(c.ParentId) == 12 {
 		c.ParentId = bson.ObjectId(c.ParentId.Hex())
 	}
+	for _, ge := range c.Games {
+		ge.To24bytesId()
+	}
 }
 
 func (c *Child) To12bytesId() {
@@ -18,6 +21,9 @@ func (c *Child) To12bytesId() {
 	}
 	if len(c.ParentId) == 24 {
 		c.ParentId = bson.ObjectIdHex(string(c.ParentId))
+	}
+	for _, ge := range c.Games {
+		ge.To12bytesId()
 	}
 }
 

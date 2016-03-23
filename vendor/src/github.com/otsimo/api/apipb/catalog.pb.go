@@ -4,7 +4,7 @@
 
 package apipb
 
-import proto "github.com/golang/protobuf/proto"
+import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -140,6 +140,7 @@ type CatalogListRequest struct {
 	HideExpired bool                          `protobuf:"varint,2,opt,name=hide_expired,proto3" json:"hide_expired,omitempty"`
 	Limit       int32                         `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	Time        int64                         `protobuf:"varint,4,opt,name=time,proto3" json:"time,omitempty"`
+	Offset      int32                         `protobuf:"varint,5,opt,name=offset,proto3" json:"offset,omitempty"`
 }
 
 func (m *CatalogListRequest) Reset()         { *m = CatalogListRequest{} }
@@ -477,6 +478,11 @@ func (m *CatalogListRequest) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintCatalog(data, i, uint64(m.Time))
 	}
+	if m.Offset != 0 {
+		data[i] = 0x28
+		i++
+		i = encodeVarintCatalog(data, i, uint64(m.Offset))
+	}
 	return i, nil
 }
 
@@ -633,6 +639,9 @@ func (m *CatalogListRequest) Size() (n int) {
 	}
 	if m.Time != 0 {
 		n += 1 + sovCatalog(uint64(m.Time))
+	}
+	if m.Offset != 0 {
+		n += 1 + sovCatalog(uint64(m.Offset))
 	}
 	return n
 }
@@ -1185,6 +1194,25 @@ func (m *CatalogListRequest) Unmarshal(data []byte) error {
 				b := data[iNdEx]
 				iNdEx++
 				m.Time |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
+			}
+			m.Offset = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCatalog
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Offset |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

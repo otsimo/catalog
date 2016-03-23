@@ -4,7 +4,7 @@
 
 package apipb
 
-import proto "github.com/golang/protobuf/proto"
+import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -25,20 +25,21 @@ var _ grpc.ClientConn
 // Client API for RegistryService service
 
 type RegistryServiceClient interface {
-	Get(ctx context.Context, in *GetGameByNameRequest, opts ...grpc.CallOption) (*Game, error)
+	// Get returns game
+	Get(ctx context.Context, in *GetGameRequest, opts ...grpc.CallOption) (*Game, error)
+	// GetRelease returns GameRelease by given game id and version
+	GetRelease(ctx context.Context, in *GetGameReleaseRequest, opts ...grpc.CallOption) (*GameRelease, error)
 	// Publish tries to create a new GameRelease by given manifest
 	Publish(ctx context.Context, in *GameManifest, opts ...grpc.CallOption) (*PublishResponse, error)
 	// ChangeReleaseState changes state of a release, If user is admin than s/he can change
 	// from WAITING to REJECTED or VALIDATED, developers can change to any except VALIDATED
 	ChangeReleaseState(ctx context.Context, in *ValidateRequest, opts ...grpc.CallOption) (*Response, error)
-	// GetLatestVersions retusn latest versions of given game ids
+	// GetLatestVersions returns latest versions of given game ids
 	GetLatestVersions(ctx context.Context, in *GetLatestVersionsRequest, opts ...grpc.CallOption) (*GameVersionsResponse, error)
-	// GetLatestVersionsStream returns versions of given game ids by steam
-	GetLatestVersionsStream(ctx context.Context, in *GetLatestVersionsRequest, opts ...grpc.CallOption) (RegistryService_GetLatestVersionsStreamClient, error)
 	// Search does search
 	Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error)
-	// ListGames returns all game ids
-	ListGames(ctx context.Context, in *ListGamesRequest, opts ...grpc.CallOption) (*ListGamesResponse, error)
+	// ListGames returns all games
+	ListGames(ctx context.Context, in *ListGamesRequest, opts ...grpc.CallOption) (RegistryService_ListGamesClient, error)
 }
 
 type registryServiceClient struct {
@@ -49,9 +50,18 @@ func NewRegistryServiceClient(cc *grpc.ClientConn) RegistryServiceClient {
 	return &registryServiceClient{cc}
 }
 
-func (c *registryServiceClient) Get(ctx context.Context, in *GetGameByNameRequest, opts ...grpc.CallOption) (*Game, error) {
+func (c *registryServiceClient) Get(ctx context.Context, in *GetGameRequest, opts ...grpc.CallOption) (*Game, error) {
 	out := new(Game)
 	err := grpc.Invoke(ctx, "/apipb.RegistryService/Get", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *registryServiceClient) GetRelease(ctx context.Context, in *GetGameReleaseRequest, opts ...grpc.CallOption) (*GameRelease, error) {
+	out := new(GameRelease)
+	err := grpc.Invoke(ctx, "/apipb.RegistryService/GetRelease", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,38 +95,6 @@ func (c *registryServiceClient) GetLatestVersions(ctx context.Context, in *GetLa
 	return out, nil
 }
 
-func (c *registryServiceClient) GetLatestVersionsStream(ctx context.Context, in *GetLatestVersionsRequest, opts ...grpc.CallOption) (RegistryService_GetLatestVersionsStreamClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_RegistryService_serviceDesc.Streams[0], c.cc, "/apipb.RegistryService/GetLatestVersionsStream", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &registryServiceGetLatestVersionsStreamClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type RegistryService_GetLatestVersionsStreamClient interface {
-	Recv() (*GameAndVersion, error)
-	grpc.ClientStream
-}
-
-type registryServiceGetLatestVersionsStreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *registryServiceGetLatestVersionsStreamClient) Recv() (*GameAndVersion, error) {
-	m := new(GameAndVersion)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *registryServiceClient) Search(ctx context.Context, in *SearchRequest, opts ...grpc.CallOption) (*SearchResponse, error) {
 	out := new(SearchResponse)
 	err := grpc.Invoke(ctx, "/apipb.RegistryService/Search", in, out, c.cc, opts...)
@@ -126,32 +104,56 @@ func (c *registryServiceClient) Search(ctx context.Context, in *SearchRequest, o
 	return out, nil
 }
 
-func (c *registryServiceClient) ListGames(ctx context.Context, in *ListGamesRequest, opts ...grpc.CallOption) (*ListGamesResponse, error) {
-	out := new(ListGamesResponse)
-	err := grpc.Invoke(ctx, "/apipb.RegistryService/ListGames", in, out, c.cc, opts...)
+func (c *registryServiceClient) ListGames(ctx context.Context, in *ListGamesRequest, opts ...grpc.CallOption) (RegistryService_ListGamesClient, error) {
+	stream, err := grpc.NewClientStream(ctx, &_RegistryService_serviceDesc.Streams[0], c.cc, "/apipb.RegistryService/ListGames", opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &registryServiceListGamesClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type RegistryService_ListGamesClient interface {
+	Recv() (*ListItem, error)
+	grpc.ClientStream
+}
+
+type registryServiceListGamesClient struct {
+	grpc.ClientStream
+}
+
+func (x *registryServiceListGamesClient) Recv() (*ListItem, error) {
+	m := new(ListItem)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // Server API for RegistryService service
 
 type RegistryServiceServer interface {
-	Get(context.Context, *GetGameByNameRequest) (*Game, error)
+	// Get returns game
+	Get(context.Context, *GetGameRequest) (*Game, error)
+	// GetRelease returns GameRelease by given game id and version
+	GetRelease(context.Context, *GetGameReleaseRequest) (*GameRelease, error)
 	// Publish tries to create a new GameRelease by given manifest
 	Publish(context.Context, *GameManifest) (*PublishResponse, error)
 	// ChangeReleaseState changes state of a release, If user is admin than s/he can change
 	// from WAITING to REJECTED or VALIDATED, developers can change to any except VALIDATED
 	ChangeReleaseState(context.Context, *ValidateRequest) (*Response, error)
-	// GetLatestVersions retusn latest versions of given game ids
+	// GetLatestVersions returns latest versions of given game ids
 	GetLatestVersions(context.Context, *GetLatestVersionsRequest) (*GameVersionsResponse, error)
-	// GetLatestVersionsStream returns versions of given game ids by steam
-	GetLatestVersionsStream(*GetLatestVersionsRequest, RegistryService_GetLatestVersionsStreamServer) error
 	// Search does search
 	Search(context.Context, *SearchRequest) (*SearchResponse, error)
-	// ListGames returns all game ids
-	ListGames(context.Context, *ListGamesRequest) (*ListGamesResponse, error)
+	// ListGames returns all games
+	ListGames(*ListGamesRequest, RegistryService_ListGamesServer) error
 }
 
 func RegisterRegistryServiceServer(s *grpc.Server, srv RegistryServiceServer) {
@@ -159,11 +161,23 @@ func RegisterRegistryServiceServer(s *grpc.Server, srv RegistryServiceServer) {
 }
 
 func _RegistryService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(GetGameByNameRequest)
+	in := new(GetGameRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	out, err := srv.(RegistryServiceServer).Get(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func _RegistryService_GetRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+	in := new(GetGameReleaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	out, err := srv.(RegistryServiceServer).GetRelease(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -206,27 +220,6 @@ func _RegistryService_GetLatestVersions_Handler(srv interface{}, ctx context.Con
 	return out, nil
 }
 
-func _RegistryService_GetLatestVersionsStream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetLatestVersionsRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(RegistryServiceServer).GetLatestVersionsStream(m, &registryServiceGetLatestVersionsStreamServer{stream})
-}
-
-type RegistryService_GetLatestVersionsStreamServer interface {
-	Send(*GameAndVersion) error
-	grpc.ServerStream
-}
-
-type registryServiceGetLatestVersionsStreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *registryServiceGetLatestVersionsStreamServer) Send(m *GameAndVersion) error {
-	return x.ServerStream.SendMsg(m)
-}
-
 func _RegistryService_Search_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
 	in := new(SearchRequest)
 	if err := dec(in); err != nil {
@@ -239,16 +232,25 @@ func _RegistryService_Search_Handler(srv interface{}, ctx context.Context, dec f
 	return out, nil
 }
 
-func _RegistryService_ListGames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
-	in := new(ListGamesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
+func _RegistryService_ListGames_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(ListGamesRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
 	}
-	out, err := srv.(RegistryServiceServer).ListGames(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	return srv.(RegistryServiceServer).ListGames(m, &registryServiceListGamesServer{stream})
+}
+
+type RegistryService_ListGamesServer interface {
+	Send(*ListItem) error
+	grpc.ServerStream
+}
+
+type registryServiceListGamesServer struct {
+	grpc.ServerStream
+}
+
+func (x *registryServiceListGamesServer) Send(m *ListItem) error {
+	return x.ServerStream.SendMsg(m)
 }
 
 var _RegistryService_serviceDesc = grpc.ServiceDesc{
@@ -258,6 +260,10 @@ var _RegistryService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Get",
 			Handler:    _RegistryService_Get_Handler,
+		},
+		{
+			MethodName: "GetRelease",
+			Handler:    _RegistryService_GetRelease_Handler,
 		},
 		{
 			MethodName: "Publish",
@@ -275,15 +281,11 @@ var _RegistryService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "Search",
 			Handler:    _RegistryService_Search_Handler,
 		},
-		{
-			MethodName: "ListGames",
-			Handler:    _RegistryService_ListGames_Handler,
-		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "GetLatestVersionsStream",
-			Handler:       _RegistryService_GetLatestVersionsStream_Handler,
+			StreamName:    "ListGames",
+			Handler:       _RegistryService_ListGames_Handler,
 			ServerStreams: true,
 		},
 	},

@@ -96,6 +96,20 @@
 			"path": "/timeutil"
 		},
 		{
+			"importpath": "github.com/gogo/protobuf/proto",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "4168943e65a2802828518e95310aeeed6d84c4e5",
+			"branch": "master",
+			"path": "/proto"
+		},
+		{
+			"importpath": "github.com/gogo/protobuf/proto/testdata",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "4168943e65a2802828518e95310aeeed6d84c4e5",
+			"branch": "master",
+			"path": "/proto/testdata"
+		},
+		{
 			"importpath": "github.com/golang/glog",
 			"repository": "https://github.com/golang/glog",
 			"revision": "fca8c8854093a154ff1eb580aae10276ad6b1b5f",
@@ -123,7 +137,7 @@
 		{
 			"importpath": "github.com/otsimo/api/apipb",
 			"repository": "https://github.com/otsimo/api",
-			"revision": "d11d8b932ca267fdf110b4723e83ec85656aee03",
+			"revision": "98bf2cbf20f434ea744bfe27945ba2bbe1ca68f1",
 			"branch": "master",
 			"path": "/apipb"
 		},

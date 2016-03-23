@@ -4,7 +4,7 @@
 
 package apipb
 
-import proto "github.com/golang/protobuf/proto"
+import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
@@ -20,43 +20,26 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-type WatchRequest_WatchRequestType int32
-
-const (
-	WatchRequest_CREATE WatchRequest_WatchRequestType = 0
-	WatchRequest_CANCEL WatchRequest_WatchRequestType = 1
-)
-
-var WatchRequest_WatchRequestType_name = map[int32]string{
-	0: "CREATE",
-	1: "CANCEL",
-}
-var WatchRequest_WatchRequestType_value = map[string]int32{
-	"CREATE": 0,
-	"CANCEL": 1,
-}
-
-func (x WatchRequest_WatchRequestType) String() string {
-	return proto.EnumName(WatchRequest_WatchRequestType_name, int32(x))
-}
-
 type WatchEvent_EventType int32
 
 const (
 	WatchEvent_PROFILE_UPDATED     WatchEvent_EventType = 0
 	WatchEvent_CHILD_UPDATED       WatchEvent_EventType = 1
 	WatchEvent_CHILD_GAMES_UPDATED WatchEvent_EventType = 2
+	WatchEvent_CHILD_SOUND_UPDATED WatchEvent_EventType = 3
 )
 
 var WatchEvent_EventType_name = map[int32]string{
 	0: "PROFILE_UPDATED",
 	1: "CHILD_UPDATED",
 	2: "CHILD_GAMES_UPDATED",
+	3: "CHILD_SOUND_UPDATED",
 }
 var WatchEvent_EventType_value = map[string]int32{
 	"PROFILE_UPDATED":     0,
 	"CHILD_UPDATED":       1,
 	"CHILD_GAMES_UPDATED": 2,
+	"CHILD_SOUND_UPDATED": 3,
 }
 
 func (x WatchEvent_EventType) String() string {
@@ -87,7 +70,6 @@ func (m *EmitResponse) String() string { return proto.CompactTextString(m) }
 func (*EmitResponse) ProtoMessage()    {}
 
 type WatchRequest struct {
-	Type WatchRequest_WatchRequestType `protobuf:"varint,1,opt,name=type,proto3,enum=apipb.WatchRequest_WatchRequestType" json:"type,omitempty"`
 	// profile id is for Create request
 	ProfileId string `protobuf:"bytes,2,opt,name=profile_id,proto3" json:"profile_id,omitempty"`
 }
@@ -125,7 +107,6 @@ func (m *WatchResponse) GetEvent() *WatchEvent {
 }
 
 func init() {
-	proto.RegisterEnum("apipb.WatchRequest_WatchRequestType", WatchRequest_WatchRequestType_name, WatchRequest_WatchRequestType_value)
 	proto.RegisterEnum("apipb.WatchEvent_EventType", WatchEvent_EventType_name, WatchEvent_EventType_value)
 }
 
@@ -137,7 +118,7 @@ var _ grpc.ClientConn
 
 type WatchServiceClient interface {
 	Emit(ctx context.Context, in *EmitRequest, opts ...grpc.CallOption) (*EmitResponse, error)
-	Watch(ctx context.Context, opts ...grpc.CallOption) (WatchService_WatchClient, error)
+	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (WatchService_WatchClient, error)
 }
 
 type watchServiceClient struct {
@@ -157,27 +138,28 @@ func (c *watchServiceClient) Emit(ctx context.Context, in *EmitRequest, opts ...
 	return out, nil
 }
 
-func (c *watchServiceClient) Watch(ctx context.Context, opts ...grpc.CallOption) (WatchService_WatchClient, error) {
+func (c *watchServiceClient) Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (WatchService_WatchClient, error) {
 	stream, err := grpc.NewClientStream(ctx, &_WatchService_serviceDesc.Streams[0], c.cc, "/apipb.WatchService/Watch", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &watchServiceWatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type WatchService_WatchClient interface {
-	Send(*WatchRequest) error
 	Recv() (*WatchResponse, error)
 	grpc.ClientStream
 }
 
 type watchServiceWatchClient struct {
 	grpc.ClientStream
-}
-
-func (x *watchServiceWatchClient) Send(m *WatchRequest) error {
-	return x.ClientStream.SendMsg(m)
 }
 
 func (x *watchServiceWatchClient) Recv() (*WatchResponse, error) {
@@ -192,7 +174,7 @@ func (x *watchServiceWatchClient) Recv() (*WatchResponse, error) {
 
 type WatchServiceServer interface {
 	Emit(context.Context, *EmitRequest) (*EmitResponse, error)
-	Watch(WatchService_WatchServer) error
+	Watch(*WatchRequest, WatchService_WatchServer) error
 }
 
 func RegisterWatchServiceServer(s *grpc.Server, srv WatchServiceServer) {
@@ -212,12 +194,15 @@ func _WatchService_Emit_Handler(srv interface{}, ctx context.Context, dec func(i
 }
 
 func _WatchService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WatchServiceServer).Watch(&watchServiceWatchServer{stream})
+	m := new(WatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(WatchServiceServer).Watch(m, &watchServiceWatchServer{stream})
 }
 
 type WatchService_WatchServer interface {
 	Send(*WatchResponse) error
-	Recv() (*WatchRequest, error)
 	grpc.ServerStream
 }
 
@@ -227,14 +212,6 @@ type watchServiceWatchServer struct {
 
 func (x *watchServiceWatchServer) Send(m *WatchResponse) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func (x *watchServiceWatchServer) Recv() (*WatchRequest, error) {
-	m := new(WatchRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 var _WatchService_serviceDesc = grpc.ServiceDesc{
@@ -251,7 +228,6 @@ var _WatchService_serviceDesc = grpc.ServiceDesc{
 			StreamName:    "Watch",
 			Handler:       _WatchService_Watch_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 }
@@ -323,11 +299,6 @@ func (m *WatchRequest) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Type != 0 {
-		data[i] = 0x8
-		i++
-		i = encodeVarintWatch(data, i, uint64(m.Type))
-	}
 	if len(m.ProfileId) > 0 {
 		data[i] = 0x12
 		i++
@@ -476,9 +447,6 @@ func (m *EmitResponse) Size() (n int) {
 func (m *WatchRequest) Size() (n int) {
 	var l int
 	_ = l
-	if m.Type != 0 {
-		n += 1 + sovWatch(uint64(m.Type))
-	}
 	l = len(m.ProfileId)
 	if l > 0 {
 		n += 1 + l + sovWatch(uint64(l))
@@ -727,25 +695,6 @@ func (m *WatchRequest) Unmarshal(data []byte) error {
 			return fmt.Errorf("proto: WatchRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			m.Type = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowWatch
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := data[iNdEx]
-				iNdEx++
-				m.Type |= (WatchRequest_WatchRequestType(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProfileId", wireType)
