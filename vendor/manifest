@@ -96,6 +96,13 @@
 			"path": "/timeutil"
 		},
 		{
+			"importpath": "github.com/gogo/protobuf/gogoproto",
+			"repository": "https://github.com/gogo/protobuf",
+			"revision": "128ef922449da3dbb6c5d942856877a1a7235fef",
+			"branch": "master",
+			"path": "/gogoproto"
+		},
+		{
 			"importpath": "github.com/gogo/protobuf/proto",
 			"repository": "https://github.com/gogo/protobuf",
 			"revision": "4168943e65a2802828518e95310aeeed6d84c4e5",
@@ -110,11 +117,11 @@
 			"path": "/proto/testdata"
 		},
 		{
-			"importpath": "github.com/gogo/protobuf/sortkeys",
+			"importpath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
 			"repository": "https://github.com/gogo/protobuf",
-			"revision": "4168943e65a2802828518e95310aeeed6d84c4e5",
+			"revision": "128ef922449da3dbb6c5d942856877a1a7235fef",
 			"branch": "master",
-			"path": "/sortkeys"
+			"path": "/protoc-gen-gogo/descriptor"
 		},
 		{
 			"importpath": "github.com/golang/glog",
@@ -136,17 +143,10 @@
 			"branch": "master"
 		},
 		{
-			"importpath": "github.com/mitchellh/go-homedir",
-			"repository": "https://github.com/mitchellh/go-homedir",
-			"revision": "d682a8f0cf139663a984ff12528da460ca963de9",
+			"importpath": "github.com/otsimo/otsimopb",
+			"repository": "https://github.com/otsimo/otsimopb",
+			"revision": "e023328483140b5b2188f394c67ad1104bee95ec",
 			"branch": "master"
-		},
-		{
-			"importpath": "github.com/otsimo/api/apipb",
-			"repository": "https://github.com/otsimo/api",
-			"revision": "98bf2cbf20f434ea744bfe27945ba2bbe1ca68f1",
-			"branch": "master",
-			"path": "/apipb"
 		},
 		{
 			"importpath": "golang.org/x/net/context",

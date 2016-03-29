@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/otsimo/api/apipb"
+	apipb "github.com/otsimo/otsimopb"
 	"gopkg.in/mgo.v2/bson"
 )
 

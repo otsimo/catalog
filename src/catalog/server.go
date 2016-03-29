@@ -9,7 +9,7 @@ import (
 	"storage"
 
 	log "github.com/Sirupsen/logrus"
-	pb "github.com/otsimo/api/apipb"
+	pb "github.com/otsimo/otsimopb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"

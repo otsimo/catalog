@@ -6,7 +6,8 @@ import (
 	"models"
 
 	"github.com/codegangsta/cli"
-	"github.com/otsimo/api/apipb"
+	apipb "github.com/otsimo/otsimopb"
+
 	"gopkg.in/mgo.v2/bson"
 )
 

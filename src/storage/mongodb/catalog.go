@@ -3,7 +3,7 @@ package mongodb
 import (
 	"models"
 
-	"github.com/otsimo/api/apipb"
+	apipb "github.com/otsimo/otsimopb"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

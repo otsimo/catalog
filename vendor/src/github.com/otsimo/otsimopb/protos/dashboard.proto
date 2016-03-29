@@ -1,0 +1,138 @@
+syntax = "proto3";
+package apipb;
+
+import "dataset.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+option go_package = "otsimopb";
+
+enum ChartType {
+    LINE = 0;
+    BAR = 1;
+    PIE = 2;
+    SCATTER = 3;
+    BUBLE = 4;
+    RADAR = 5;
+    GEO = 6;
+    TIMELINE = 7;
+}
+
+//Request and Responses
+
+message Dashboard{
+    //ProfileId
+    string profile_id = 1;
+    //ChildId
+    string child_id = 2;
+    //Data
+    DataSet data = 3;
+    //Created At
+    int64 created_at = 4;
+    //Request which created this data
+  //  AnalyzeRequest request = 5; 
+}
+
+message DashboardGetRequest {
+    string profile_id = 1;
+    string child_id = 2;
+    string app_version = 3;
+    string language = 4;
+    string country_code = 5;
+} 
+
+// DashboardService
+service DashboardService {
+    rpc Get(DashboardGetRequest) returns (Dashboard);
+}
+
+//message Decoration
+
+message DashboardItemDecoration{
+    enum Size {
+        //Small is 1x1 block
+        SMALL = 0;
+        //Medium is 2x1 block
+        MEDIUM = 1;
+        //Large is 2x2 block
+        LARGE = 2;
+    }
+    
+    enum BackgroundStyle{
+        EMPTY = 0;
+        IMAGE = 1;
+        CHART_SILHOUETTE = 2;
+    }
+    
+    Size size = 1;
+    BackgroundStyle background_style = 2;
+    string image_url = 3;
+    string left_icon = 4;
+    string right_icon = 5;
+}
+
+message DashboardItem{
+    string title = 1;
+    int64 expires_at = 2;    
+    int64 created_at = 3;
+    DashboardItemDecoration decoration = 4;
+}
+
+/*
+
+
+DashboardItemType
+    - Webpage
+    - Applink
+    - AnalysisChart
+
+DashboardItem
+
+*/
+
+/*
+    line
+    bar
+    pie
+    scatter
+    bubble
+    radar
+    
+    geo
+    timeline
+    
+    
+Column
+    ValueType
+    Name
+Row
+    Values
+
+
+Purpose:
+X-axis group labels (discrete)
+X-axis values (continuous)
+
+Data Type:	
+string (discrete)
+number, date, datetime, or timeofday (continuous)
+
+The following axes are always continuous:
+    Both axes of bubble charts.
+    The minor axis.
+
+The following axes are always discrete:
+    The major axis of stepped area charts (and combo charts containing such series).
+
+For a discrete axis, set the data column type to string.
+For a continuous axis, set the data column type to one of: number, date, datetime or timeofday
+
+
+*/
+
+

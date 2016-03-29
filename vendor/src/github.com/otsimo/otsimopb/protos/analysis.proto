@@ -1,0 +1,232 @@
+syntax = "proto3";
+package apipb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "dataset.proto";
+
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_unrecognized_all) = false;
+option go_package = "otsimopb";
+
+message TimeRange{
+    //From is the unix seconds time
+    int64 from = 1;
+    //To is the unix seconds time
+    int64 to = 2;
+}
+
+message ChildAndProfileIds{
+    //ChildId
+    string child_id = 1;
+    //ProfileId
+    string profile_id = 2;
+}
+
+message ChildAndTimeRange{
+    //ChildId
+    string child_id = 1;
+    //ProfileId
+    string profile_id = 2;
+    //Range is the time range
+    TimeRange range = 3;
+}
+
+message AnalysisDataField {
+    enum Type {
+        STRING = 0;
+        INTEGER = 1;
+        FLOAT = 2;
+        BOOL = 3;
+    }
+    //Name is the field name
+    string name = 1;
+    //Type is fields type
+    Type type = 2;
+}
+
+message AnalysisMetadata {
+    //GameId
+    string game_id = 1;
+    //GameVersion
+    repeated string versions = 2;
+    //Event
+    string event = 3;
+    //AnalysisLoad
+    repeated AnalysisDataField fields = 4;
+   
+}
+
+message GameWithVersions{
+    //GameId
+    string game_id = 1;
+    //Versions
+    repeated string versions = 2;
+}
+
+message AvailableAnalysisResult{
+    //Analysis
+    repeated AnalysisMetadata analysis = 1;
+}
+
+message QuerySort{
+    enum SortOrder{
+        ASC = 0;
+        DSC = 1;
+    }
+    string field_name = 1;    
+    SortOrder order = 2;
+}
+
+message Aggregation{
+    enum Accumulator{
+        NONE = 0;
+        COUNT = 1;
+        SUM = 2;
+        MAX = 3;
+        MIN = 4;
+        AVG = 5;
+    }
+    string field_name = 1;
+    Accumulator accumulator = 2;
+}
+
+message GroupInterval{
+    oneof interval {
+        //For ContinuesInterval
+        int32 int = 1;
+        //For ContinuesInterval
+        float real = 2;
+        //For Datetime
+        int32 days = 3;
+        //For Datetime
+        int32 hours = 4;
+        //For TimeOfDay
+        bool minutes = 5;
+        //For TimeOfDay
+        bool seconds = 6;    
+    };    
+}
+
+message QueryGroup {
+    enum GroupType {
+        //Date gives rows each day of given timeRange
+        Date = 0;
+        //Datetime gives rows on given interval
+        Datetime  = 1;
+        //TimeofDay gives rows on time of day. minutes and seconds on interval value determines interval.
+        //ex: if minutes and seconds are false then rows will be 0,1,2,3,4
+        //ex: if minutes is false then rows will be 00:00,00:01,00:02,...
+        //when seconds is true than minutes is always true
+        TimeOfDay = 2;
+        //Discrete should be used for String values
+        Discrete = 3;
+        //ContinuesInterval is for number values
+        ContinuesInterval = 4;
+    }
+    string field_name = 1;
+    GroupType type = 2;
+    //Interval is optional for Date and Discrete type
+    GroupInterval interval = 3;
+}
+
+message Query{
+    string event = 1;
+    TimeRange range = 2;
+    repeated QuerySort sort = 3;
+    int32 limit = 4;
+    int32 offset = 5;
+    QueryGroup group_by = 6;
+    repeated Aggregation aggregations = 7;
+}
+
+message AnalyzeRequest{
+    //ChildId
+    string child_id = 1;
+    //ProfileId
+    string profile_id = 2;
+    //GameId
+    string game_id = 3;
+    //Game Versions
+    repeated string game_versions = 4;
+    //Query is calculation query
+    Query query = 6;
+}
+
+message AnalyzeResult{
+    //Request
+    AnalyzeRequest request = 1;
+    //Data
+    DataSet data = 2;
+    //Created At
+    int64 created_at = 3;
+}
+
+//Active Users
+message ActiveUsersRequest{
+    enum Type{
+        MONTLY = 0;
+        DAILY = 1;
+        NEW = 2;
+        TOTAL = 3;
+    }
+    Type type = 1;
+    repeated int64 dates = 2;
+    string app_id= 3;
+}
+
+message ActiveUsersResult{
+    //Request
+    ActiveUsersRequest request = 1;
+     //Data
+    DataSet data = 2;
+    //Created At
+    int64 created_at = 3;   
+}
+
+// Retention
+message RetentionRequest{
+    enum Type{
+        ONE = 0;
+        SEVEN = 1;
+        THIRTY = 2;
+    }
+    Type type = 1;
+    repeated int64 dates = 2;
+    string app_id= 3;
+}
+
+message RetentionResult{
+    //Request
+    RetentionRequest request = 1;
+    //Data
+    DataSet data = 2;
+    //Created At
+    int64 created_at = 3;   
+}
+
+// Revenue
+
+// Sessions
+
+service AnalysisService {
+    // ActiveOnRange returns child ids who active given time range
+    rpc ActiveOnRange(TimeRange) returns (stream ChildAndProfileIds);
+    // PlayedGames returns games played during given time range
+    rpc PlayedGames(ChildAndTimeRange) returns (GameWithVersions);
+    // AvailableAnalysis returns analysis can be calculated
+    rpc AvailableAnalysis(GameWithVersions) returns (AvailableAnalysisResult);
+    // Analyze calculates given request
+    rpc Analyze(AnalyzeRequest) returns (AnalyzeResult);
+    // ActiveUsers calculates MAU, DAU
+    rpc ActiveUsers(ActiveUsersRequest) returns (ActiveUsersResult);
+    // Retention returns retentation
+    rpc Retention(RetentionRequest) returns (RetentionResult);
+    
+    //rpc Sessions
+    
+    //rpc Revenue
+}
+
