@@ -50,7 +50,7 @@ func getJWTToken(ctx context.Context) (jose.JWT, error) {
 		return jose.JWT{}, fmt.Errorf("missing metadata")
 	}
 	var auth []string
-	auth, ok = md["Authorization"]
+	auth, ok = md["authorization"]
 	if !ok || len(auth) == 0 {
 		return jose.JWT{}, fmt.Errorf("missing authorization header")
 	}
