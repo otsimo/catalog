@@ -17,4 +17,5 @@ docker build --rm -t ${TAG_NAME} .
 
 if [ "$1" = "push" ]; then
     gcloud docker push ${TAG_NAME}
+    echo finished pushing ${TAG_NAME}
 fi
