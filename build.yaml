@@ -1,0 +1,16 @@
+version: 0.4
+outputdir: ./bin
+scripts:
+  fmt: goimports -w src
+projects:
+  - name: catalog
+    type: go
+    root: src/cmd/catalog
+    imageName: gcr.io/otsimocloud/catalog
+    dockerfile: ./Dockerfile
+    run: ./catalog --debug --storage mongodb
+    golang:
+      package: cmd/catalog
+      cgoEnabled: false
+      ldflags: "-w -X main.Version=${BUILD_VERSION}"
+      builder: gb

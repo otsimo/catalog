@@ -113,6 +113,46 @@ func (m *AppEventData) String() string            { return proto.CompactTextStri
 func (*AppEventData) ProtoMessage()               {}
 func (*AppEventData) Descriptor() ([]byte, []int) { return fileDescriptorListener, []int{4} }
 
+type BatchEventData struct {
+	// Event the event name
+	Event string `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
+	// EventId is Client side event id in order to track whether event is delivered successfully
+	EventId string `protobuf:"bytes,2,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	// Timestamp is seconds unix time
+	Timestamp int64 `protobuf:"varint,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	// Game is the game information
+	Game *GameInfo `protobuf:"bytes,4,opt,name=game" json:"game,omitempty"`
+	// Loc is the location of user
+	Loc *Point `protobuf:"bytes,5,opt,name=loc" json:"loc,omitempty"`
+	// IsResend is true if client is trying to send a failed event
+	IsResend bool `protobuf:"varint,6,opt,name=is_resend,json=isResend,proto3" json:"is_resend,omitempty"`
+	// Payload is a json data
+	Payload []byte `protobuf:"bytes,7,opt,name=payload,proto3" json:"payload,omitempty"`
+}
+
+func (m *BatchEventData) Reset()                    { *m = BatchEventData{} }
+func (m *BatchEventData) String() string            { return proto.CompactTextString(m) }
+func (*BatchEventData) ProtoMessage()               {}
+func (*BatchEventData) Descriptor() ([]byte, []int) { return fileDescriptorListener, []int{5} }
+
+type BatchEvent struct {
+	// UserId is profile id or child id
+	UserId string `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// Child is secondary id
+	ChildId string `protobuf:"bytes,2,opt,name=child_id,json=childId,proto3" json:"child_id,omitempty"`
+	// AppId is the client app id
+	AppId string `protobuf:"bytes,3,opt,name=app_id,json=appId,proto3" json:"app_id,omitempty"`
+	// Device is device information,
+	Device *DeviceInfo `protobuf:"bytes,4,opt,name=device" json:"device,omitempty"`
+	// Data is
+	Data []*BatchEventData `protobuf:"bytes,5,rep,name=data" json:"data,omitempty"`
+}
+
+func (m *BatchEvent) Reset()                    { *m = BatchEvent{} }
+func (m *BatchEvent) String() string            { return proto.CompactTextString(m) }
+func (*BatchEvent) ProtoMessage()               {}
+func (*BatchEvent) Descriptor() ([]byte, []int) { return fileDescriptorListener, []int{6} }
+
 type EventResponse struct {
 	EventId string `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
 	Success bool   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
@@ -121,7 +161,7 @@ type EventResponse struct {
 func (m *EventResponse) Reset()                    { *m = EventResponse{} }
 func (m *EventResponse) String() string            { return proto.CompactTextString(m) }
 func (*EventResponse) ProtoMessage()               {}
-func (*EventResponse) Descriptor() ([]byte, []int) { return fileDescriptorListener, []int{5} }
+func (*EventResponse) Descriptor() ([]byte, []int) { return fileDescriptorListener, []int{7} }
 
 func init() {
 	proto.RegisterType((*DeviceInfo)(nil), "apipb.DeviceInfo")
@@ -129,12 +169,18 @@ func init() {
 	proto.RegisterType((*Point)(nil), "apipb.Point")
 	proto.RegisterType((*Event)(nil), "apipb.Event")
 	proto.RegisterType((*AppEventData)(nil), "apipb.AppEventData")
+	proto.RegisterType((*BatchEventData)(nil), "apipb.BatchEventData")
+	proto.RegisterType((*BatchEvent)(nil), "apipb.BatchEvent")
 	proto.RegisterType((*EventResponse)(nil), "apipb.EventResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion3
 
 // Client API for ListenerService service
 
@@ -202,16 +248,22 @@ func RegisterListenerServiceServer(s *grpc.Server, srv ListenerServiceServer) {
 	s.RegisterService(&_ListenerService_serviceDesc, srv)
 }
 
-func _ListenerService_AppEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _ListenerService_AppEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AppEventData)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(ListenerServiceServer).AppEvent(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(ListenerServiceServer).AppEvent(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.ListenerService/AppEvent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ListenerServiceServer).AppEvent(ctx, req.(*AppEventData))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _ListenerService_CustomEvent_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -257,6 +309,7 @@ var _ListenerService_serviceDesc = grpc.ServiceDesc{
 			ClientStreams: true,
 		},
 	},
+	Metadata: fileDescriptorListener,
 }
 
 func (m *DeviceInfo) Marshal() (data []byte, err error) {
@@ -497,13 +550,11 @@ func (m *Event) MarshalTo(data []byte) (int, error) {
 		}
 		i++
 	}
-	if m.Payload != nil {
-		if len(m.Payload) > 0 {
-			data[i] = 0x5a
-			i++
-			i = encodeVarintListener(data, i, uint64(len(m.Payload)))
-			i += copy(data[i:], m.Payload)
-		}
+	if len(m.Payload) > 0 {
+		data[i] = 0x5a
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.Payload)))
+		i += copy(data[i:], m.Payload)
 	}
 	return i, nil
 }
@@ -550,13 +601,11 @@ func (m *AppEventData) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintListener(data, i, uint64(m.Timestamp))
 	}
-	if m.Payload != nil {
-		if len(m.Payload) > 0 {
-			data[i] = 0x2a
-			i++
-			i = encodeVarintListener(data, i, uint64(len(m.Payload)))
-			i += copy(data[i:], m.Payload)
-		}
+	if len(m.Payload) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.Payload)))
+		i += copy(data[i:], m.Payload)
 	}
 	if m.Loc != nil {
 		data[i] = 0x32
@@ -583,6 +632,135 @@ func (m *AppEventData) MarshalTo(data []byte) (int, error) {
 			data[i] = 0
 		}
 		i++
+	}
+	return i, nil
+}
+
+func (m *BatchEventData) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *BatchEventData) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Event) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.Event)))
+		i += copy(data[i:], m.Event)
+	}
+	if len(m.EventId) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.EventId)))
+		i += copy(data[i:], m.EventId)
+	}
+	if m.Timestamp != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintListener(data, i, uint64(m.Timestamp))
+	}
+	if m.Game != nil {
+		data[i] = 0x22
+		i++
+		i = encodeVarintListener(data, i, uint64(m.Game.Size()))
+		n6, err := m.Game.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n6
+	}
+	if m.Loc != nil {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintListener(data, i, uint64(m.Loc.Size()))
+		n7, err := m.Loc.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n7
+	}
+	if m.IsResend {
+		data[i] = 0x30
+		i++
+		if m.IsResend {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
+	}
+	if len(m.Payload) > 0 {
+		data[i] = 0x3a
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.Payload)))
+		i += copy(data[i:], m.Payload)
+	}
+	return i, nil
+}
+
+func (m *BatchEvent) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *BatchEvent) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.UserId) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.UserId)))
+		i += copy(data[i:], m.UserId)
+	}
+	if len(m.ChildId) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.ChildId)))
+		i += copy(data[i:], m.ChildId)
+	}
+	if len(m.AppId) > 0 {
+		data[i] = 0x1a
+		i++
+		i = encodeVarintListener(data, i, uint64(len(m.AppId)))
+		i += copy(data[i:], m.AppId)
+	}
+	if m.Device != nil {
+		data[i] = 0x22
+		i++
+		i = encodeVarintListener(data, i, uint64(m.Device.Size()))
+		n8, err := m.Device.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	if len(m.Data) > 0 {
+		for _, msg := range m.Data {
+			data[i] = 0x2a
+			i++
+			i = encodeVarintListener(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -769,11 +947,9 @@ func (m *Event) Size() (n int) {
 	if m.IsResend {
 		n += 2
 	}
-	if m.Payload != nil {
-		l = len(m.Payload)
-		if l > 0 {
-			n += 1 + l + sovListener(uint64(l))
-		}
+	l = len(m.Payload)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
 	}
 	return n
 }
@@ -796,11 +972,9 @@ func (m *AppEventData) Size() (n int) {
 	if m.Timestamp != 0 {
 		n += 1 + sovListener(uint64(m.Timestamp))
 	}
-	if m.Payload != nil {
-		l = len(m.Payload)
-		if l > 0 {
-			n += 1 + l + sovListener(uint64(l))
-		}
+	l = len(m.Payload)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
 	}
 	if m.Loc != nil {
 		l = m.Loc.Size()
@@ -812,6 +986,66 @@ func (m *AppEventData) Size() (n int) {
 	}
 	if m.IsResend {
 		n += 2
+	}
+	return n
+}
+
+func (m *BatchEventData) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Event)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
+	}
+	l = len(m.EventId)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
+	}
+	if m.Timestamp != 0 {
+		n += 1 + sovListener(uint64(m.Timestamp))
+	}
+	if m.Game != nil {
+		l = m.Game.Size()
+		n += 1 + l + sovListener(uint64(l))
+	}
+	if m.Loc != nil {
+		l = m.Loc.Size()
+		n += 1 + l + sovListener(uint64(l))
+	}
+	if m.IsResend {
+		n += 2
+	}
+	l = len(m.Payload)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
+	}
+	return n
+}
+
+func (m *BatchEvent) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.UserId)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
+	}
+	l = len(m.ChildId)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
+	}
+	l = len(m.AppId)
+	if l > 0 {
+		n += 1 + l + sovListener(uint64(l))
+	}
+	if m.Device != nil {
+		l = m.Device.Size()
+		n += 1 + l + sovListener(uint64(l))
+	}
+	if len(m.Data) > 0 {
+		for _, e := range m.Data {
+			l = e.Size()
+			n += 1 + l + sovListener(uint64(l))
+		}
 	}
 	return n
 }
@@ -2073,6 +2307,451 @@ func (m *AppEventData) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *BatchEventData) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowListener
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BatchEventData: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BatchEventData: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Event", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Event = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EventId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EventId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timestamp", wireType)
+			}
+			m.Timestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				m.Timestamp |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Game", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Game == nil {
+				m.Game = &GameInfo{}
+			}
+			if err := m.Game.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Loc", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Loc == nil {
+				m.Loc = &Point{}
+			}
+			if err := m.Loc.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsResend", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsResend = bool(v != 0)
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Payload", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				byteLen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Payload = append(m.Payload[:0], data[iNdEx:postIndex]...)
+			if m.Payload == nil {
+				m.Payload = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipListener(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthListener
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *BatchEvent) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowListener
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: BatchEvent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: BatchEvent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field UserId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.UserId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ChildId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ChildId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AppId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Device", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Device == nil {
+				m.Device = &DeviceInfo{}
+			}
+			if err := m.Device.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowListener
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthListener
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append(m.Data, &BatchEventData{})
+			if err := m.Data[len(m.Data)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipListener(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthListener
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *EventResponse) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -2278,48 +2957,54 @@ var (
 )
 
 var fileDescriptorListener = []byte{
-	// 678 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x8c, 0x54, 0x4d, 0x6e, 0xd3, 0x40,
-	0x14, 0xae, 0x93, 0xc6, 0x71, 0x5e, 0xd2, 0x16, 0x86, 0x02, 0xa6, 0xa0, 0xa8, 0x32, 0x2c, 0x0a,
-	0x12, 0x29, 0x0a, 0xea, 0x01, 0x4a, 0x8b, 0x50, 0x25, 0x04, 0x95, 0x53, 0xb1, 0x60, 0x53, 0x39,
-	0xf6, 0xd4, 0x1d, 0x61, 0x7b, 0x2c, 0xcf, 0xb8, 0x52, 0x56, 0x5c, 0x80, 0x05, 0x67, 0xe0, 0x34,
-	0x5d, 0xf6, 0x08, 0xfc, 0xdc, 0x81, 0x35, 0x33, 0xcf, 0x76, 0x6c, 0x8b, 0xaa, 0xb0, 0xb0, 0x94,
-	0xef, 0x7b, 0xef, 0x79, 0xbe, 0xf7, 0x7d, 0x13, 0xc3, 0x7a, 0xc4, 0x84, 0xa4, 0x09, 0xcd, 0x26,
-	0x69, 0xc6, 0x25, 0x27, 0x3d, 0x2f, 0x65, 0xe9, 0x7c, 0xeb, 0x79, 0xc8, 0xe4, 0x79, 0x3e, 0x9f,
-	0xf8, 0x3c, 0xde, 0x0d, 0x79, 0xc8, 0x77, 0xb1, 0x3a, 0xcf, 0xcf, 0x10, 0x21, 0xc0, 0x5f, 0xc5,
-	0x94, 0xf3, 0xa5, 0x0b, 0x70, 0x48, 0x2f, 0x98, 0x4f, 0x8f, 0x92, 0x33, 0x4e, 0xb6, 0xc0, 0xba,
-	0xa0, 0x49, 0xc0, 0xb3, 0xa3, 0xc0, 0x36, 0xb6, 0x8d, 0x9d, 0x81, 0xbb, 0xc4, 0xe4, 0x11, 0x0c,
-	0xfc, 0x88, 0xd1, 0x44, 0xce, 0x82, 0x4f, 0x76, 0x07, 0x8b, 0x35, 0x41, 0x9e, 0xc1, 0xad, 0x79,
-	0x9e, 0x04, 0x11, 0x3d, 0x0a, 0x14, 0xc3, 0xce, 0x18, 0xcd, 0xec, 0x2e, 0x36, 0xfd, 0xc5, 0x93,
-	0x27, 0xb0, 0x56, 0x70, 0x1f, 0x68, 0x26, 0x18, 0x4f, 0xec, 0x55, 0x6c, 0x6c, 0x93, 0x64, 0x02,
-	0xa4, 0x20, 0x66, 0xe7, 0x3c, 0x93, 0x55, 0x6b, 0x0f, 0x5b, 0xaf, 0xa9, 0x90, 0x31, 0x40, 0x80,
-	0x9b, 0x9c, 0x2c, 0x52, 0x6a, 0x9b, 0xd8, 0xd7, 0x60, 0xea, 0xfa, 0x3b, 0x2f, 0xa6, 0x76, 0xbf,
-	0x59, 0xd7, 0x0c, 0xb9, 0x07, 0x26, 0x17, 0x58, 0xb3, 0xb0, 0x56, 0x22, 0xad, 0x56, 0x2c, 0x94,
-	0xd5, 0x71, 0x25, 0x61, 0x50, 0xa8, 0x6d, 0x91, 0xc4, 0x81, 0x51, 0xe4, 0x25, 0x61, 0xee, 0x85,
-	0xf4, 0x80, 0x07, 0xd4, 0x06, 0x6c, 0x6a, 0x71, 0x64, 0x1b, 0x86, 0x3e, 0xcf, 0x13, 0x99, 0x2d,
-	0xb0, 0x65, 0x88, 0x2d, 0x4d, 0xca, 0x39, 0x06, 0xeb, 0x8d, 0x3a, 0x13, 0xb3, 0x58, 0x87, 0x0e,
-	0xab, 0x52, 0x50, 0xbf, 0x88, 0x0d, 0xfd, 0x8b, 0x52, 0x41, 0xe1, 0x7e, 0x05, 0x75, 0x6a, 0xd5,
-	0x39, 0xa5, 0xe7, 0x4b, 0xec, 0xec, 0x43, 0xef, 0x98, 0xb3, 0x44, 0x16, 0x4d, 0x92, 0xc9, 0x5c,
-	0x9d, 0xac, 0x5f, 0xda, 0x73, 0x97, 0x58, 0x47, 0x1b, 0xf1, 0x24, 0x2c, 0x8a, 0x1d, 0x2c, 0xd6,
-	0x84, 0x73, 0xd9, 0x81, 0xde, 0x6b, 0x75, 0x0d, 0x24, 0xb9, 0x0f, 0xfd, 0x5c, 0xd0, 0xec, 0x74,
-	0xa9, 0xcb, 0xd4, 0x50, 0xdd, 0x8d, 0x07, 0x60, 0xf9, 0xe7, 0x2c, 0x0a, 0x74, 0xa5, 0x14, 0x87,
-	0x58, 0x95, 0x36, 0xa1, 0x47, 0xf5, 0x70, 0xa9, 0xac, 0x00, 0xfa, 0x44, 0xc9, 0x62, 0x2a, 0xa4,
-	0x17, 0xa7, 0x18, 0x7f, 0xd7, 0xad, 0x09, 0xf2, 0x18, 0x56, 0x43, 0x1d, 0x84, 0x0e, 0x7b, 0x38,
-	0xdd, 0x98, 0xe0, 0xd5, 0x9e, 0x54, 0xce, 0xb8, 0x58, 0x24, 0x4f, 0xc1, 0x2c, 0xd2, 0xc3, 0xac,
-	0x87, 0xd3, 0xdb, 0x65, 0x5b, 0x7d, 0x9d, 0xdd, 0xb2, 0x81, 0xdc, 0x05, 0xd3, 0x4b, 0x53, 0x2d,
-	0xae, 0x88, 0x5d, 0xfd, 0x57, 0x52, 0x25, 0x6d, 0x0c, 0xdd, 0x88, 0xfb, 0x18, 0xf7, 0x70, 0x3a,
-	0x2a, 0xc7, 0xd1, 0x2d, 0x57, 0x17, 0xf4, 0x56, 0xa8, 0x56, 0x0f, 0x16, 0xa1, 0xf7, 0x11, 0xab,
-	0xd1, 0x87, 0x30, 0x60, 0xe2, 0x34, 0xa3, 0x42, 0xfd, 0x3b, 0x30, 0x6b, 0xcb, 0xb5, 0x98, 0x70,
-	0x11, 0xeb, 0xa4, 0x52, 0x6f, 0x11, 0x71, 0x2f, 0xc0, 0x8c, 0x47, 0x6e, 0x05, 0x9d, 0xdf, 0x06,
-	0x8c, 0xf6, 0xd3, 0x14, 0xdd, 0x3c, 0xf4, 0xa4, 0x57, 0xbb, 0x63, 0x34, 0xdd, 0xa9, 0xf5, 0x76,
-	0x9a, 0x7a, 0xeb, 0x8d, 0xbb, 0xff, 0xda, 0xf8, 0x66, 0x7f, 0x1b, 0x02, 0x7b, 0x2d, 0x81, 0x95,
-	0x25, 0xe6, 0xff, 0x58, 0xd2, 0xbf, 0xc1, 0x12, 0xab, 0x6d, 0x89, 0x73, 0x08, 0x6b, 0xb8, 0xb4,
-	0x82, 0x29, 0x4f, 0x04, 0x6d, 0xbd, 0xc8, 0x68, 0xbf, 0x48, 0xa9, 0x13, 0xb9, 0xef, 0x53, 0x21,
-	0x70, 0x7d, 0xcb, 0xad, 0xe0, 0xf4, 0x33, 0x6c, 0xbc, 0x2d, 0xbf, 0x7a, 0x33, 0x9a, 0xe1, 0xa2,
-	0x7b, 0x60, 0x55, 0x86, 0x92, 0x3b, 0xa5, 0xde, 0xa6, 0xc3, 0x5b, 0x9b, 0x25, 0xd9, 0x3e, 0x7e,
-	0x0f, 0x86, 0x07, 0xb9, 0x90, 0x3c, 0x2e, 0x26, 0x47, 0xcd, 0xa6, 0xeb, 0x47, 0x76, 0x8c, 0x17,
-	0xc6, 0xab, 0x9d, 0xcb, 0x1f, 0xe3, 0x95, 0x2b, 0xf5, 0x5c, 0xfe, 0x1c, 0x1b, 0x57, 0xea, 0xf9,
-	0xae, 0x9e, 0xaf, 0xbf, 0xc6, 0x2b, 0x1f, 0x2d, 0x2e, 0x05, 0x8b, 0x79, 0x3a, 0xff, 0xd6, 0xe9,
-	0xbe, 0x3f, 0x99, 0xcd, 0x4d, 0xfc, 0xbe, 0xbe, 0xfc, 0x13, 0x00, 0x00, 0xff, 0xff, 0xef, 0x76,
-	0x18, 0x24, 0xa7, 0x05, 0x00, 0x00,
+	// 772 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x9c, 0x55, 0xcb, 0x6e, 0xdb, 0x46,
+	0x14, 0x35, 0x45, 0x91, 0xa2, 0xae, 0x64, 0xbb, 0x9d, 0xda, 0x2d, 0xeb, 0x16, 0x82, 0xc1, 0x76,
+	0x61, 0x17, 0xa8, 0x5c, 0xa8, 0xf0, 0xaa, 0x2b, 0x3f, 0x8a, 0xc2, 0x40, 0xd1, 0x1a, 0x94, 0x91,
+	0x45, 0x36, 0x06, 0x45, 0x8e, 0xa9, 0x41, 0x28, 0x0e, 0x41, 0x0e, 0x0d, 0x68, 0x95, 0x1f, 0xc8,
+	0x22, 0xdf, 0x90, 0x7d, 0xfe, 0xc3, 0x4b, 0xef, 0xb3, 0xc9, 0xe3, 0x1f, 0xb2, 0xce, 0xcc, 0x25,
+	0x29, 0x92, 0x88, 0x1f, 0x41, 0x16, 0x04, 0x74, 0xcf, 0x3d, 0xa3, 0x39, 0xf7, 0x9c, 0x4b, 0x10,
+	0x36, 0x22, 0x96, 0x09, 0x1a, 0xd3, 0x74, 0x9c, 0xa4, 0x5c, 0x70, 0x62, 0x78, 0x09, 0x4b, 0x66,
+	0x3b, 0xbf, 0x87, 0x4c, 0xcc, 0xf3, 0xd9, 0xd8, 0xe7, 0x8b, 0x83, 0x90, 0x87, 0xfc, 0x00, 0xbb,
+	0xb3, 0xfc, 0x0a, 0x2b, 0x2c, 0xf0, 0x57, 0x71, 0xca, 0x79, 0xa1, 0x03, 0x9c, 0xd2, 0x6b, 0xe6,
+	0xd3, 0xb3, 0xf8, 0x8a, 0x93, 0x1d, 0xb0, 0xae, 0x69, 0x1c, 0xf0, 0xf4, 0x2c, 0xb0, 0xb5, 0x5d,
+	0x6d, 0xaf, 0xef, 0xae, 0x6a, 0xf2, 0x33, 0xf4, 0xfd, 0x88, 0xd1, 0x58, 0x4c, 0x83, 0x67, 0x76,
+	0x07, 0x9b, 0x35, 0x40, 0x7e, 0x83, 0x6f, 0x66, 0x79, 0x1c, 0x44, 0xf4, 0x2c, 0x90, 0x08, 0xbb,
+	0x62, 0x34, 0xb5, 0x75, 0x24, 0x7d, 0x86, 0x93, 0x5f, 0x61, 0xbd, 0xc0, 0x9e, 0xd0, 0x34, 0x63,
+	0x3c, 0xb6, 0xbb, 0x48, 0x6c, 0x83, 0x64, 0x0c, 0xa4, 0x00, 0xa6, 0x73, 0x9e, 0x8a, 0x8a, 0x6a,
+	0x20, 0xf5, 0x8e, 0x0e, 0x19, 0x01, 0x04, 0x38, 0xc9, 0xc5, 0x32, 0xa1, 0xb6, 0x89, 0xbc, 0x06,
+	0x52, 0xf7, 0xff, 0xf3, 0x16, 0xd4, 0xee, 0x35, 0xfb, 0x0a, 0x21, 0xdf, 0x83, 0xc9, 0x33, 0xec,
+	0x59, 0xd8, 0x2b, 0x2b, 0xa5, 0x36, 0x5b, 0x4a, 0xab, 0x17, 0x95, 0x84, 0x7e, 0xa1, 0xb6, 0x05,
+	0x12, 0x07, 0x86, 0x91, 0x17, 0x87, 0xb9, 0x17, 0xd2, 0x13, 0x1e, 0x50, 0x1b, 0x90, 0xd4, 0xc2,
+	0xc8, 0x2e, 0x0c, 0x7c, 0x9e, 0xc7, 0x22, 0x5d, 0x22, 0x65, 0x80, 0x94, 0x26, 0xe4, 0x9c, 0x83,
+	0xf5, 0x8f, 0xbc, 0x13, 0xb3, 0xd8, 0x80, 0x0e, 0xab, 0x52, 0x90, 0xbf, 0x88, 0x0d, 0xbd, 0xeb,
+	0x52, 0x41, 0xe1, 0x7e, 0x55, 0xaa, 0xd4, 0xaa, 0x7b, 0x4a, 0xcf, 0x57, 0xb5, 0x73, 0x04, 0xc6,
+	0x39, 0x67, 0xb1, 0x28, 0x48, 0x82, 0x89, 0x5c, 0xde, 0xac, 0xfe, 0xd4, 0x70, 0x57, 0xb5, 0x8a,
+	0x36, 0xe2, 0x71, 0x58, 0x34, 0x3b, 0xd8, 0xac, 0x01, 0xe7, 0xa6, 0x03, 0xc6, 0xdf, 0x72, 0x0d,
+	0x04, 0xf9, 0x01, 0x7a, 0x79, 0x46, 0xd3, 0xcb, 0x95, 0x2e, 0x53, 0x95, 0x72, 0x37, 0x7e, 0x04,
+	0xcb, 0x9f, 0xb3, 0x28, 0x50, 0x9d, 0x52, 0x1c, 0xd6, 0xb2, 0xb5, 0x05, 0x06, 0x55, 0x87, 0x4b,
+	0x65, 0x45, 0xa1, 0x6e, 0x14, 0x6c, 0x41, 0x33, 0xe1, 0x2d, 0x12, 0x8c, 0x5f, 0x77, 0x6b, 0x80,
+	0xfc, 0x02, 0xdd, 0x50, 0x05, 0xa1, 0xc2, 0x1e, 0x4c, 0x36, 0xc7, 0xb8, 0xda, 0xe3, 0xca, 0x19,
+	0x17, 0x9b, 0x64, 0x1f, 0xcc, 0x22, 0x3d, 0xcc, 0x7a, 0x30, 0xf9, 0xb6, 0xa4, 0xd5, 0xeb, 0xec,
+	0x96, 0x04, 0xb2, 0x0d, 0xa6, 0x97, 0x24, 0x4a, 0x5c, 0x11, 0xbb, 0x7c, 0x57, 0x12, 0x29, 0x6d,
+	0x04, 0x7a, 0xc4, 0x7d, 0x8c, 0x7b, 0x30, 0x19, 0x96, 0xc7, 0xd1, 0x2d, 0x57, 0x35, 0xd4, 0x54,
+	0xa8, 0x56, 0x1d, 0x2c, 0x42, 0xef, 0x61, 0x2d, 0x8f, 0xfe, 0x04, 0x7d, 0x96, 0x5d, 0xa6, 0x34,
+	0x93, 0x6f, 0x07, 0x66, 0x6d, 0xb9, 0x16, 0xcb, 0x5c, 0xac, 0x55, 0x52, 0x89, 0xb7, 0x8c, 0xb8,
+	0x17, 0x60, 0xc6, 0x43, 0xb7, 0x2a, 0x9d, 0x8f, 0x1a, 0x0c, 0x8f, 0x92, 0x04, 0xdd, 0x3c, 0xf5,
+	0x84, 0x57, 0xbb, 0xa3, 0x35, 0xdd, 0xa9, 0xf5, 0x76, 0x9a, 0x7a, 0xeb, 0x89, 0xf5, 0xc7, 0x26,
+	0x7e, 0xd8, 0xdf, 0x86, 0x40, 0xa3, 0x25, 0xb0, 0xb2, 0xc4, 0xfc, 0x12, 0x4b, 0x7a, 0x0f, 0x58,
+	0x62, 0xb5, 0x2d, 0x71, 0xde, 0x68, 0xb0, 0x71, 0xec, 0x09, 0x7f, 0xfe, 0xd8, 0xe8, 0xcd, 0x0b,
+	0x3a, 0xed, 0x0b, 0x5a, 0x33, 0xe9, 0xf7, 0xed, 0x4c, 0xf7, 0xa1, 0x9d, 0x29, 0xc7, 0x33, 0xee,
+	0x1b, 0xaf, 0x35, 0x83, 0x79, 0x7f, 0xac, 0xbd, 0x76, 0xac, 0xaf, 0x35, 0x80, 0x7a, 0xba, 0xaf,
+	0x7a, 0x4d, 0xea, 0xc8, 0xf5, 0xbb, 0x23, 0xef, 0x3e, 0x16, 0xf9, 0x3e, 0x74, 0x03, 0xe9, 0xab,
+	0x1c, 0x4e, 0x97, 0xc4, 0xed, 0x92, 0xd8, 0x36, 0xdd, 0x45, 0x8a, 0x73, 0x0a, 0xeb, 0x08, 0xc9,
+	0xc1, 0x12, 0x1e, 0x67, 0xb4, 0xe5, 0xba, 0xd6, 0x76, 0x5d, 0x4e, 0x9d, 0xe5, 0xbe, 0x4f, 0xb3,
+	0x0c, 0x25, 0x5b, 0x6e, 0x55, 0x4e, 0x9e, 0xc3, 0xe6, 0xbf, 0xe5, 0x37, 0x68, 0x4a, 0x53, 0xd4,
+	0x70, 0x08, 0x56, 0xb5, 0xde, 0xe4, 0xbb, 0x52, 0x41, 0x73, 0xdf, 0x77, 0xb6, 0x4a, 0xb0, 0x7d,
+	0xfd, 0x21, 0x0c, 0x4e, 0xf2, 0x4c, 0xf0, 0x45, 0x71, 0x72, 0xd8, 0x24, 0xdd, 0x7d, 0x64, 0x4f,
+	0xfb, 0x43, 0x3b, 0xfe, 0xeb, 0xe6, 0xdd, 0x68, 0xed, 0x56, 0x3e, 0x37, 0xef, 0x47, 0xda, 0xad,
+	0x7c, 0xde, 0xca, 0xe7, 0xe5, 0x87, 0xd1, 0x1a, 0x6c, 0xca, 0xcf, 0xdf, 0x98, 0x8b, 0x8c, 0x2d,
+	0xf8, 0x38, 0x4c, 0x13, 0xff, 0x5c, 0x7b, 0x6a, 0x15, 0x65, 0x32, 0x7b, 0xd5, 0xd1, 0xff, 0xbf,
+	0x98, 0xce, 0x4c, 0xfc, 0x00, 0xfe, 0xf9, 0x29, 0x00, 0x00, 0xff, 0xff, 0x8a, 0x8b, 0x54, 0xf5,
+	0x48, 0x07, 0x00, 0x00,
 }

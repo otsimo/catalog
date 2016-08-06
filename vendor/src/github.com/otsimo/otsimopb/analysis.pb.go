@@ -9,9 +9,9 @@
 		analysis.proto
 		api.proto
 		catalog.proto
-		certman.proto
 		content.proto
 		dashboard.proto
+		dashprovider.proto
 		dataset.proto
 		discovery.proto
 		listener.proto
@@ -28,6 +28,7 @@
 		AnalysisDataField
 		AnalysisMetadata
 		GameWithVersions
+		PlayedGamesList
 		AvailableAnalysisResult
 		QuerySort
 		Aggregation
@@ -46,16 +47,23 @@
 		CatalogListRequest
 		CatalogListResponse
 		CatalogApproveRequest
-		ServiceInfo
-		Certificate
 		Content
 		ContentListRequest
 		ContentListResponse
 		ContentGetRequest
-		Dashboard
+		DashboardItems
 		DashboardGetRequest
-		DashboardItemDecoration
-		DashboardItem
+		CardDecoration
+		CardEmpty
+		CardWebpage
+		CardApplink
+		CardAnalysis
+		Card
+		ProviderGetRequest
+		ProviderItem
+		ProviderItems
+		ProviderInfoRequest
+		ProviderInfo
 		Column
 		TimeOfDay
 		RowValue
@@ -63,11 +71,15 @@
 		DataSet
 		OtsimoServices
 		DiscoveryRequest
+		SelfLearningSegment
+		SelfLearningConfig
 		DeviceInfo
 		GameInfo
 		Point
 		Event
 		AppEventData
+		BatchEventData
+		BatchEvent
 		EventResponse
 		GetProfileRequest
 		GetChildRequest
@@ -79,6 +91,7 @@
 		GameEntryRequest
 		PublishResponse
 		ValidateRequest
+		UpdateIndecesRequest
 		GetGameRequest
 		ListGamesRequest
 		ListItem
@@ -178,7 +191,7 @@ func (x QuerySort_SortOrder) String() string {
 	return proto.EnumName(QuerySort_SortOrder_name, int32(x))
 }
 func (QuerySort_SortOrder) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{7, 0}
+	return fileDescriptorAnalysis, []int{8, 0}
 }
 
 type Aggregation_Accumulator int32
@@ -213,7 +226,7 @@ func (x Aggregation_Accumulator) String() string {
 	return proto.EnumName(Aggregation_Accumulator_name, int32(x))
 }
 func (Aggregation_Accumulator) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{8, 0}
+	return fileDescriptorAnalysis, []int{9, 0}
 }
 
 type QueryGroup_GroupType int32
@@ -225,7 +238,7 @@ const (
 	QueryGroup_Datetime QueryGroup_GroupType = 1
 	// TimeofDay gives rows on time of day. minutes and seconds on interval value determines interval.
 	// ex: if minutes and seconds are false then rows will be 0,1,2,3,4
-	// ex: if minutes is false then rows will be 00:00,00:01,00:02,...
+	// ex: if minutes is true then rows will be 00:00,00:01,00:02,...
 	// when seconds is true than minutes is always true
 	QueryGroup_TimeOfDay QueryGroup_GroupType = 2
 	// Discrete should be used for String values
@@ -253,7 +266,7 @@ func (x QueryGroup_GroupType) String() string {
 	return proto.EnumName(QueryGroup_GroupType_name, int32(x))
 }
 func (QueryGroup_GroupType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{10, 0}
+	return fileDescriptorAnalysis, []int{11, 0}
 }
 
 type ActiveUsersRequest_Type int32
@@ -282,7 +295,7 @@ func (x ActiveUsersRequest_Type) String() string {
 	return proto.EnumName(ActiveUsersRequest_Type_name, int32(x))
 }
 func (ActiveUsersRequest_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{14, 0}
+	return fileDescriptorAnalysis, []int{15, 0}
 }
 
 type RetentionRequest_Type int32
@@ -308,7 +321,7 @@ func (x RetentionRequest_Type) String() string {
 	return proto.EnumName(RetentionRequest_Type_name, int32(x))
 }
 func (RetentionRequest_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptorAnalysis, []int{16, 0}
+	return fileDescriptorAnalysis, []int{17, 0}
 }
 
 type TimeRange struct {
@@ -389,6 +402,15 @@ func (m *GameWithVersions) String() string            { return proto.CompactText
 func (*GameWithVersions) ProtoMessage()               {}
 func (*GameWithVersions) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{5} }
 
+type PlayedGamesList struct {
+	Games []*GameWithVersions `protobuf:"bytes,1,rep,name=games" json:"games,omitempty"`
+}
+
+func (m *PlayedGamesList) Reset()                    { *m = PlayedGamesList{} }
+func (m *PlayedGamesList) String() string            { return proto.CompactTextString(m) }
+func (*PlayedGamesList) ProtoMessage()               {}
+func (*PlayedGamesList) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{6} }
+
 type AvailableAnalysisResult struct {
 	// Analysis
 	Analysis []*AnalysisMetadata `protobuf:"bytes,1,rep,name=analysis" json:"analysis,omitempty"`
@@ -397,7 +419,7 @@ type AvailableAnalysisResult struct {
 func (m *AvailableAnalysisResult) Reset()                    { *m = AvailableAnalysisResult{} }
 func (m *AvailableAnalysisResult) String() string            { return proto.CompactTextString(m) }
 func (*AvailableAnalysisResult) ProtoMessage()               {}
-func (*AvailableAnalysisResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{6} }
+func (*AvailableAnalysisResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{7} }
 
 type QuerySort struct {
 	FieldName string              `protobuf:"bytes,1,opt,name=field_name,json=fieldName,proto3" json:"field_name,omitempty"`
@@ -407,254 +429,51 @@ type QuerySort struct {
 func (m *QuerySort) Reset()                    { *m = QuerySort{} }
 func (m *QuerySort) String() string            { return proto.CompactTextString(m) }
 func (*QuerySort) ProtoMessage()               {}
-func (*QuerySort) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{7} }
+func (*QuerySort) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{8} }
 
 type Aggregation struct {
 	FieldName   string                  `protobuf:"bytes,1,opt,name=field_name,json=fieldName,proto3" json:"field_name,omitempty"`
-	Accumulator Aggregation_Accumulator `protobuf:"varint,2,opt,name=accumulator,proto3,enum=apipb.Aggregation_Accumulator" json:"accumulator,omitempty"`
+	OutputField string                  `protobuf:"bytes,2,opt,name=output_field,json=outputField,proto3" json:"output_field,omitempty"`
+	Accumulator Aggregation_Accumulator `protobuf:"varint,3,opt,name=accumulator,proto3,enum=apipb.Aggregation_Accumulator" json:"accumulator,omitempty"`
 }
 
 func (m *Aggregation) Reset()                    { *m = Aggregation{} }
 func (m *Aggregation) String() string            { return proto.CompactTextString(m) }
 func (*Aggregation) ProtoMessage()               {}
-func (*Aggregation) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{8} }
+func (*Aggregation) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{9} }
 
 type GroupInterval struct {
-	// Types that are valid to be assigned to Interval:
-	//	*GroupInterval_Int
-	//	*GroupInterval_Real
-	//	*GroupInterval_Days
-	//	*GroupInterval_Hours
-	//	*GroupInterval_Minutes
-	//	*GroupInterval_Seconds
-	Interval isGroupInterval_Interval `protobuf_oneof:"interval"`
+	// For ContinuesInterval
+	Int int32 `protobuf:"varint,1,opt,name=int,proto3" json:"int,omitempty"`
+	// For ContinuesInterval
+	Real float32 `protobuf:"fixed32,2,opt,name=real,proto3" json:"real,omitempty"`
+	// For Datetime
+	Days int32 `protobuf:"varint,3,opt,name=days,proto3" json:"days,omitempty"`
+	// For Datetime
+	Hours int32 `protobuf:"varint,4,opt,name=hours,proto3" json:"hours,omitempty"`
+	// For TimeOfDay
+	Minutes bool `protobuf:"varint,5,opt,name=minutes,proto3" json:"minutes,omitempty"`
+	// For TimeOfDay
+	Seconds bool `protobuf:"varint,6,opt,name=seconds,proto3" json:"seconds,omitempty"`
 }
 
 func (m *GroupInterval) Reset()                    { *m = GroupInterval{} }
 func (m *GroupInterval) String() string            { return proto.CompactTextString(m) }
 func (*GroupInterval) ProtoMessage()               {}
-func (*GroupInterval) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{9} }
-
-type isGroupInterval_Interval interface {
-	isGroupInterval_Interval()
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type GroupInterval_Int struct {
-	Int int32 `protobuf:"varint,1,opt,name=int,proto3,oneof"`
-}
-type GroupInterval_Real struct {
-	Real float32 `protobuf:"fixed32,2,opt,name=real,proto3,oneof"`
-}
-type GroupInterval_Days struct {
-	Days int32 `protobuf:"varint,3,opt,name=days,proto3,oneof"`
-}
-type GroupInterval_Hours struct {
-	Hours int32 `protobuf:"varint,4,opt,name=hours,proto3,oneof"`
-}
-type GroupInterval_Minutes struct {
-	Minutes bool `protobuf:"varint,5,opt,name=minutes,proto3,oneof"`
-}
-type GroupInterval_Seconds struct {
-	Seconds bool `protobuf:"varint,6,opt,name=seconds,proto3,oneof"`
-}
-
-func (*GroupInterval_Int) isGroupInterval_Interval()     {}
-func (*GroupInterval_Real) isGroupInterval_Interval()    {}
-func (*GroupInterval_Days) isGroupInterval_Interval()    {}
-func (*GroupInterval_Hours) isGroupInterval_Interval()   {}
-func (*GroupInterval_Minutes) isGroupInterval_Interval() {}
-func (*GroupInterval_Seconds) isGroupInterval_Interval() {}
-
-func (m *GroupInterval) GetInterval() isGroupInterval_Interval {
-	if m != nil {
-		return m.Interval
-	}
-	return nil
-}
-
-func (m *GroupInterval) GetInt() int32 {
-	if x, ok := m.GetInterval().(*GroupInterval_Int); ok {
-		return x.Int
-	}
-	return 0
-}
-
-func (m *GroupInterval) GetReal() float32 {
-	if x, ok := m.GetInterval().(*GroupInterval_Real); ok {
-		return x.Real
-	}
-	return 0
-}
-
-func (m *GroupInterval) GetDays() int32 {
-	if x, ok := m.GetInterval().(*GroupInterval_Days); ok {
-		return x.Days
-	}
-	return 0
-}
-
-func (m *GroupInterval) GetHours() int32 {
-	if x, ok := m.GetInterval().(*GroupInterval_Hours); ok {
-		return x.Hours
-	}
-	return 0
-}
-
-func (m *GroupInterval) GetMinutes() bool {
-	if x, ok := m.GetInterval().(*GroupInterval_Minutes); ok {
-		return x.Minutes
-	}
-	return false
-}
-
-func (m *GroupInterval) GetSeconds() bool {
-	if x, ok := m.GetInterval().(*GroupInterval_Seconds); ok {
-		return x.Seconds
-	}
-	return false
-}
-
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*GroupInterval) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _GroupInterval_OneofMarshaler, _GroupInterval_OneofUnmarshaler, _GroupInterval_OneofSizer, []interface{}{
-		(*GroupInterval_Int)(nil),
-		(*GroupInterval_Real)(nil),
-		(*GroupInterval_Days)(nil),
-		(*GroupInterval_Hours)(nil),
-		(*GroupInterval_Minutes)(nil),
-		(*GroupInterval_Seconds)(nil),
-	}
-}
-
-func _GroupInterval_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*GroupInterval)
-	// interval
-	switch x := m.Interval.(type) {
-	case *GroupInterval_Int:
-		_ = b.EncodeVarint(1<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(uint64(x.Int))
-	case *GroupInterval_Real:
-		_ = b.EncodeVarint(2<<3 | proto.WireFixed32)
-		_ = b.EncodeFixed32(uint64(math.Float32bits(x.Real)))
-	case *GroupInterval_Days:
-		_ = b.EncodeVarint(3<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(uint64(x.Days))
-	case *GroupInterval_Hours:
-		_ = b.EncodeVarint(4<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(uint64(x.Hours))
-	case *GroupInterval_Minutes:
-		t := uint64(0)
-		if x.Minutes {
-			t = 1
-		}
-		_ = b.EncodeVarint(5<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(t)
-	case *GroupInterval_Seconds:
-		t := uint64(0)
-		if x.Seconds {
-			t = 1
-		}
-		_ = b.EncodeVarint(6<<3 | proto.WireVarint)
-		_ = b.EncodeVarint(t)
-	case nil:
-	default:
-		return fmt.Errorf("GroupInterval.Interval has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _GroupInterval_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*GroupInterval)
-	switch tag {
-	case 1: // interval.int
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Interval = &GroupInterval_Int{int32(x)}
-		return true, err
-	case 2: // interval.real
-		if wire != proto.WireFixed32 {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeFixed32()
-		m.Interval = &GroupInterval_Real{math.Float32frombits(uint32(x))}
-		return true, err
-	case 3: // interval.days
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Interval = &GroupInterval_Days{int32(x)}
-		return true, err
-	case 4: // interval.hours
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Interval = &GroupInterval_Hours{int32(x)}
-		return true, err
-	case 5: // interval.minutes
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Interval = &GroupInterval_Minutes{x != 0}
-		return true, err
-	case 6: // interval.seconds
-		if wire != proto.WireVarint {
-			return true, proto.ErrInternalBadWireType
-		}
-		x, err := b.DecodeVarint()
-		m.Interval = &GroupInterval_Seconds{x != 0}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _GroupInterval_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*GroupInterval)
-	// interval
-	switch x := m.Interval.(type) {
-	case *GroupInterval_Int:
-		n += proto.SizeVarint(1<<3 | proto.WireVarint)
-		n += proto.SizeVarint(uint64(x.Int))
-	case *GroupInterval_Real:
-		n += proto.SizeVarint(2<<3 | proto.WireFixed32)
-		n += 4
-	case *GroupInterval_Days:
-		n += proto.SizeVarint(3<<3 | proto.WireVarint)
-		n += proto.SizeVarint(uint64(x.Days))
-	case *GroupInterval_Hours:
-		n += proto.SizeVarint(4<<3 | proto.WireVarint)
-		n += proto.SizeVarint(uint64(x.Hours))
-	case *GroupInterval_Minutes:
-		n += proto.SizeVarint(5<<3 | proto.WireVarint)
-		n += 1
-	case *GroupInterval_Seconds:
-		n += proto.SizeVarint(6<<3 | proto.WireVarint)
-		n += 1
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
+func (*GroupInterval) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{10} }
 
 type QueryGroup struct {
 	FieldName string               `protobuf:"bytes,1,opt,name=field_name,json=fieldName,proto3" json:"field_name,omitempty"`
 	Type      QueryGroup_GroupType `protobuf:"varint,2,opt,name=type,proto3,enum=apipb.QueryGroup_GroupType" json:"type,omitempty"`
 	// Interval is optional for Date and Discrete type
-	Interval *GroupInterval `protobuf:"bytes,3,opt,name=interval" json:"interval,omitempty"`
+	Interval    *GroupInterval `protobuf:"bytes,3,opt,name=interval" json:"interval,omitempty"`
+	OutputField string         `protobuf:"bytes,4,opt,name=output_field,json=outputField,proto3" json:"output_field,omitempty"`
 }
 
 func (m *QueryGroup) Reset()                    { *m = QueryGroup{} }
 func (m *QueryGroup) String() string            { return proto.CompactTextString(m) }
 func (*QueryGroup) ProtoMessage()               {}
-func (*QueryGroup) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{10} }
+func (*QueryGroup) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{11} }
 
 type Query struct {
 	Event        string         `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
@@ -669,7 +488,7 @@ type Query struct {
 func (m *Query) Reset()                    { *m = Query{} }
 func (m *Query) String() string            { return proto.CompactTextString(m) }
 func (*Query) ProtoMessage()               {}
-func (*Query) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{11} }
+func (*Query) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{12} }
 
 type AnalyzeRequest struct {
 	// ChildId
@@ -687,7 +506,7 @@ type AnalyzeRequest struct {
 func (m *AnalyzeRequest) Reset()                    { *m = AnalyzeRequest{} }
 func (m *AnalyzeRequest) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzeRequest) ProtoMessage()               {}
-func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{12} }
+func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{13} }
 
 type AnalyzeResult struct {
 	// Request
@@ -701,7 +520,7 @@ type AnalyzeResult struct {
 func (m *AnalyzeResult) Reset()                    { *m = AnalyzeResult{} }
 func (m *AnalyzeResult) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzeResult) ProtoMessage()               {}
-func (*AnalyzeResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{13} }
+func (*AnalyzeResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{14} }
 
 // Active Users
 type ActiveUsersRequest struct {
@@ -713,7 +532,7 @@ type ActiveUsersRequest struct {
 func (m *ActiveUsersRequest) Reset()                    { *m = ActiveUsersRequest{} }
 func (m *ActiveUsersRequest) String() string            { return proto.CompactTextString(m) }
 func (*ActiveUsersRequest) ProtoMessage()               {}
-func (*ActiveUsersRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{14} }
+func (*ActiveUsersRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{15} }
 
 type ActiveUsersResult struct {
 	// Request
@@ -727,7 +546,7 @@ type ActiveUsersResult struct {
 func (m *ActiveUsersResult) Reset()                    { *m = ActiveUsersResult{} }
 func (m *ActiveUsersResult) String() string            { return proto.CompactTextString(m) }
 func (*ActiveUsersResult) ProtoMessage()               {}
-func (*ActiveUsersResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{15} }
+func (*ActiveUsersResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{16} }
 
 // Retention
 type RetentionRequest struct {
@@ -739,7 +558,7 @@ type RetentionRequest struct {
 func (m *RetentionRequest) Reset()                    { *m = RetentionRequest{} }
 func (m *RetentionRequest) String() string            { return proto.CompactTextString(m) }
 func (*RetentionRequest) ProtoMessage()               {}
-func (*RetentionRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{16} }
+func (*RetentionRequest) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{17} }
 
 type RetentionResult struct {
 	// Request
@@ -753,7 +572,7 @@ type RetentionResult struct {
 func (m *RetentionResult) Reset()                    { *m = RetentionResult{} }
 func (m *RetentionResult) String() string            { return proto.CompactTextString(m) }
 func (*RetentionResult) ProtoMessage()               {}
-func (*RetentionResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{17} }
+func (*RetentionResult) Descriptor() ([]byte, []int) { return fileDescriptorAnalysis, []int{18} }
 
 func init() {
 	proto.RegisterType((*TimeRange)(nil), "apipb.TimeRange")
@@ -762,6 +581,7 @@ func init() {
 	proto.RegisterType((*AnalysisDataField)(nil), "apipb.AnalysisDataField")
 	proto.RegisterType((*AnalysisMetadata)(nil), "apipb.AnalysisMetadata")
 	proto.RegisterType((*GameWithVersions)(nil), "apipb.GameWithVersions")
+	proto.RegisterType((*PlayedGamesList)(nil), "apipb.PlayedGamesList")
 	proto.RegisterType((*AvailableAnalysisResult)(nil), "apipb.AvailableAnalysisResult")
 	proto.RegisterType((*QuerySort)(nil), "apipb.QuerySort")
 	proto.RegisterType((*Aggregation)(nil), "apipb.Aggregation")
@@ -786,13 +606,17 @@ func init() {
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion3
+
 // Client API for AnalysisService service
 
 type AnalysisServiceClient interface {
 	// ActiveOnRange returns child ids who active given time range
 	ActiveOnRange(ctx context.Context, in *TimeRange, opts ...grpc.CallOption) (AnalysisService_ActiveOnRangeClient, error)
 	// PlayedGames returns games played during given time range
-	PlayedGames(ctx context.Context, in *ChildAndTimeRange, opts ...grpc.CallOption) (*GameWithVersions, error)
+	PlayedGames(ctx context.Context, in *ChildAndTimeRange, opts ...grpc.CallOption) (*PlayedGamesList, error)
 	// AvailableAnalysis returns analysis can be calculated
 	AvailableAnalysis(ctx context.Context, in *GameWithVersions, opts ...grpc.CallOption) (*AvailableAnalysisResult, error)
 	// Analyze calculates given request
@@ -843,8 +667,8 @@ func (x *analysisServiceActiveOnRangeClient) Recv() (*ChildAndProfileIds, error)
 	return m, nil
 }
 
-func (c *analysisServiceClient) PlayedGames(ctx context.Context, in *ChildAndTimeRange, opts ...grpc.CallOption) (*GameWithVersions, error) {
-	out := new(GameWithVersions)
+func (c *analysisServiceClient) PlayedGames(ctx context.Context, in *ChildAndTimeRange, opts ...grpc.CallOption) (*PlayedGamesList, error) {
+	out := new(PlayedGamesList)
 	err := grpc.Invoke(ctx, "/apipb.AnalysisService/PlayedGames", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -894,7 +718,7 @@ type AnalysisServiceServer interface {
 	// ActiveOnRange returns child ids who active given time range
 	ActiveOnRange(*TimeRange, AnalysisService_ActiveOnRangeServer) error
 	// PlayedGames returns games played during given time range
-	PlayedGames(context.Context, *ChildAndTimeRange) (*GameWithVersions, error)
+	PlayedGames(context.Context, *ChildAndTimeRange) (*PlayedGamesList, error)
 	// AvailableAnalysis returns analysis can be calculated
 	AvailableAnalysis(context.Context, *GameWithVersions) (*AvailableAnalysisResult, error)
 	// Analyze calculates given request
@@ -930,64 +754,94 @@ func (x *analysisServiceActiveOnRangeServer) Send(m *ChildAndProfileIds) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _AnalysisService_PlayedGames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _AnalysisService_PlayedGames_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ChildAndTimeRange)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AnalysisServiceServer).PlayedGames(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AnalysisServiceServer).PlayedGames(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.AnalysisService/PlayedGames",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnalysisServiceServer).PlayedGames(ctx, req.(*ChildAndTimeRange))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _AnalysisService_AvailableAnalysis_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _AnalysisService_AvailableAnalysis_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GameWithVersions)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AnalysisServiceServer).AvailableAnalysis(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AnalysisServiceServer).AvailableAnalysis(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.AnalysisService/AvailableAnalysis",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnalysisServiceServer).AvailableAnalysis(ctx, req.(*GameWithVersions))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _AnalysisService_Analyze_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _AnalysisService_Analyze_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AnalyzeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AnalysisServiceServer).Analyze(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AnalysisServiceServer).Analyze(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.AnalysisService/Analyze",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnalysisServiceServer).Analyze(ctx, req.(*AnalyzeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _AnalysisService_ActiveUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _AnalysisService_ActiveUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ActiveUsersRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AnalysisServiceServer).ActiveUsers(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AnalysisServiceServer).ActiveUsers(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.AnalysisService/ActiveUsers",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnalysisServiceServer).ActiveUsers(ctx, req.(*ActiveUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
-func _AnalysisService_Retention_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _AnalysisService_Retention_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RetentionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(AnalysisServiceServer).Retention(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(AnalysisServiceServer).Retention(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.AnalysisService/Retention",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AnalysisServiceServer).Retention(ctx, req.(*RetentionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _AnalysisService_serviceDesc = grpc.ServiceDesc{
@@ -1022,6 +876,7 @@ var _AnalysisService_serviceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
+	Metadata: fileDescriptorAnalysis,
 }
 
 func (m *TimeRange) Marshal() (data []byte, err error) {
@@ -1247,6 +1102,36 @@ func (m *GameWithVersions) MarshalTo(data []byte) (int, error) {
 	return i, nil
 }
 
+func (m *PlayedGamesList) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *PlayedGamesList) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Games) > 0 {
+		for _, msg := range m.Games {
+			data[i] = 0xa
+			i++
+			i = encodeVarintAnalysis(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
 func (m *AvailableAnalysisResult) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1327,8 +1212,14 @@ func (m *Aggregation) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintAnalysis(data, i, uint64(len(m.FieldName)))
 		i += copy(data[i:], m.FieldName)
 	}
+	if len(m.OutputField) > 0 {
+		data[i] = 0x12
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(len(m.OutputField)))
+		i += copy(data[i:], m.OutputField)
+	}
 	if m.Accumulator != 0 {
-		data[i] = 0x10
+		data[i] = 0x18
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Accumulator))
 	}
@@ -1350,68 +1241,49 @@ func (m *GroupInterval) MarshalTo(data []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Interval != nil {
-		nn2, err := m.Interval.MarshalTo(data[i:])
-		if err != nil {
-			return 0, err
+	if m.Int != 0 {
+		data[i] = 0x8
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(m.Int))
+	}
+	if m.Real != 0 {
+		data[i] = 0x15
+		i++
+		i = encodeFixed32Analysis(data, i, uint32(math.Float32bits(float32(m.Real))))
+	}
+	if m.Days != 0 {
+		data[i] = 0x18
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(m.Days))
+	}
+	if m.Hours != 0 {
+		data[i] = 0x20
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(m.Hours))
+	}
+	if m.Minutes {
+		data[i] = 0x28
+		i++
+		if m.Minutes {
+			data[i] = 1
+		} else {
+			data[i] = 0
 		}
-		i += nn2
+		i++
+	}
+	if m.Seconds {
+		data[i] = 0x30
+		i++
+		if m.Seconds {
+			data[i] = 1
+		} else {
+			data[i] = 0
+		}
+		i++
 	}
 	return i, nil
 }
 
-func (m *GroupInterval_Int) MarshalTo(data []byte) (int, error) {
-	i := 0
-	data[i] = 0x8
-	i++
-	i = encodeVarintAnalysis(data, i, uint64(m.Int))
-	return i, nil
-}
-func (m *GroupInterval_Real) MarshalTo(data []byte) (int, error) {
-	i := 0
-	data[i] = 0x15
-	i++
-	i = encodeFixed32Analysis(data, i, uint32(math.Float32bits(float32(m.Real))))
-	return i, nil
-}
-func (m *GroupInterval_Days) MarshalTo(data []byte) (int, error) {
-	i := 0
-	data[i] = 0x18
-	i++
-	i = encodeVarintAnalysis(data, i, uint64(m.Days))
-	return i, nil
-}
-func (m *GroupInterval_Hours) MarshalTo(data []byte) (int, error) {
-	i := 0
-	data[i] = 0x20
-	i++
-	i = encodeVarintAnalysis(data, i, uint64(m.Hours))
-	return i, nil
-}
-func (m *GroupInterval_Minutes) MarshalTo(data []byte) (int, error) {
-	i := 0
-	data[i] = 0x28
-	i++
-	if m.Minutes {
-		data[i] = 1
-	} else {
-		data[i] = 0
-	}
-	i++
-	return i, nil
-}
-func (m *GroupInterval_Seconds) MarshalTo(data []byte) (int, error) {
-	i := 0
-	data[i] = 0x30
-	i++
-	if m.Seconds {
-		data[i] = 1
-	} else {
-		data[i] = 0
-	}
-	i++
-	return i, nil
-}
 func (m *QueryGroup) Marshal() (data []byte, err error) {
 	size := m.Size()
 	data = make([]byte, size)
@@ -1442,11 +1314,17 @@ func (m *QueryGroup) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x1a
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Interval.Size()))
-		n3, err := m.Interval.MarshalTo(data[i:])
+		n2, err := m.Interval.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n3
+		i += n2
+	}
+	if len(m.OutputField) > 0 {
+		data[i] = 0x22
+		i++
+		i = encodeVarintAnalysis(data, i, uint64(len(m.OutputField)))
+		i += copy(data[i:], m.OutputField)
 	}
 	return i, nil
 }
@@ -1476,11 +1354,11 @@ func (m *Query) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x12
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Range.Size()))
-		n4, err := m.Range.MarshalTo(data[i:])
+		n3, err := m.Range.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n3
 	}
 	if len(m.Sort) > 0 {
 		for _, msg := range m.Sort {
@@ -1508,11 +1386,11 @@ func (m *Query) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.GroupBy.Size()))
-		n5, err := m.GroupBy.MarshalTo(data[i:])
+		n4, err := m.GroupBy.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n4
 	}
 	if len(m.Aggregations) > 0 {
 		for _, msg := range m.Aggregations {
@@ -1581,11 +1459,11 @@ func (m *AnalyzeRequest) MarshalTo(data []byte) (int, error) {
 		data[i] = 0x32
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Query.Size()))
-		n6, err := m.Query.MarshalTo(data[i:])
+		n5, err := m.Query.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n6
+		i += n5
 	}
 	return i, nil
 }
@@ -1609,21 +1487,21 @@ func (m *AnalyzeResult) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Request.Size()))
-		n7, err := m.Request.MarshalTo(data[i:])
+		n6, err := m.Request.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n6
 	}
 	if m.Data != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Data.Size()))
-		n8, err := m.Data.MarshalTo(data[i:])
+		n7, err := m.Data.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n7
 	}
 	if m.CreatedAt != 0 {
 		data[i] = 0x18
@@ -1688,21 +1566,21 @@ func (m *ActiveUsersResult) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Request.Size()))
-		n9, err := m.Request.MarshalTo(data[i:])
+		n8, err := m.Request.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n8
 	}
 	if m.Data != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Data.Size()))
-		n10, err := m.Data.MarshalTo(data[i:])
+		n9, err := m.Data.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n9
 	}
 	if m.CreatedAt != 0 {
 		data[i] = 0x18
@@ -1767,21 +1645,21 @@ func (m *RetentionResult) MarshalTo(data []byte) (int, error) {
 		data[i] = 0xa
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Request.Size()))
-		n11, err := m.Request.MarshalTo(data[i:])
+		n10, err := m.Request.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n10
 	}
 	if m.Data != nil {
 		data[i] = 0x12
 		i++
 		i = encodeVarintAnalysis(data, i, uint64(m.Data.Size()))
-		n12, err := m.Data.MarshalTo(data[i:])
+		n11, err := m.Data.MarshalTo(data[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n11
 	}
 	if m.CreatedAt != 0 {
 		data[i] = 0x18
@@ -1917,6 +1795,18 @@ func (m *GameWithVersions) Size() (n int) {
 	return n
 }
 
+func (m *PlayedGamesList) Size() (n int) {
+	var l int
+	_ = l
+	if len(m.Games) > 0 {
+		for _, e := range m.Games {
+			l = e.Size()
+			n += 1 + l + sovAnalysis(uint64(l))
+		}
+	}
+	return n
+}
+
 func (m *AvailableAnalysisResult) Size() (n int) {
 	var l int
 	_ = l
@@ -1949,6 +1839,10 @@ func (m *Aggregation) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovAnalysis(uint64(l))
 	}
+	l = len(m.OutputField)
+	if l > 0 {
+		n += 1 + l + sovAnalysis(uint64(l))
+	}
 	if m.Accumulator != 0 {
 		n += 1 + sovAnalysis(uint64(m.Accumulator))
 	}
@@ -1958,48 +1852,27 @@ func (m *Aggregation) Size() (n int) {
 func (m *GroupInterval) Size() (n int) {
 	var l int
 	_ = l
-	if m.Interval != nil {
-		n += m.Interval.Size()
+	if m.Int != 0 {
+		n += 1 + sovAnalysis(uint64(m.Int))
+	}
+	if m.Real != 0 {
+		n += 5
+	}
+	if m.Days != 0 {
+		n += 1 + sovAnalysis(uint64(m.Days))
+	}
+	if m.Hours != 0 {
+		n += 1 + sovAnalysis(uint64(m.Hours))
+	}
+	if m.Minutes {
+		n += 2
+	}
+	if m.Seconds {
+		n += 2
 	}
 	return n
 }
 
-func (m *GroupInterval_Int) Size() (n int) {
-	var l int
-	_ = l
-	n += 1 + sovAnalysis(uint64(m.Int))
-	return n
-}
-func (m *GroupInterval_Real) Size() (n int) {
-	var l int
-	_ = l
-	n += 5
-	return n
-}
-func (m *GroupInterval_Days) Size() (n int) {
-	var l int
-	_ = l
-	n += 1 + sovAnalysis(uint64(m.Days))
-	return n
-}
-func (m *GroupInterval_Hours) Size() (n int) {
-	var l int
-	_ = l
-	n += 1 + sovAnalysis(uint64(m.Hours))
-	return n
-}
-func (m *GroupInterval_Minutes) Size() (n int) {
-	var l int
-	_ = l
-	n += 2
-	return n
-}
-func (m *GroupInterval_Seconds) Size() (n int) {
-	var l int
-	_ = l
-	n += 2
-	return n
-}
 func (m *QueryGroup) Size() (n int) {
 	var l int
 	_ = l
@@ -2012,6 +1885,10 @@ func (m *QueryGroup) Size() (n int) {
 	}
 	if m.Interval != nil {
 		l = m.Interval.Size()
+		n += 1 + l + sovAnalysis(uint64(l))
+	}
+	l = len(m.OutputField)
+	if l > 0 {
 		n += 1 + l + sovAnalysis(uint64(l))
 	}
 	return n
@@ -2892,6 +2769,87 @@ func (m *GameWithVersions) Unmarshal(data []byte) error {
 	}
 	return nil
 }
+func (m *PlayedGamesList) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowAnalysis
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: PlayedGamesList: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: PlayedGamesList: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Games", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAnalysis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthAnalysis
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Games = append(m.Games, &GameWithVersions{})
+			if err := m.Games[len(m.Games)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipAnalysis(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthAnalysis
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *AvailableAnalysisResult) Unmarshal(data []byte) error {
 	l := len(data)
 	iNdEx := 0
@@ -3130,6 +3088,35 @@ func (m *Aggregation) Unmarshal(data []byte) error {
 			m.FieldName = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OutputField", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAnalysis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAnalysis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OutputField = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Accumulator", wireType)
 			}
@@ -3202,7 +3189,7 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Int", wireType)
 			}
-			var v int32
+			m.Int = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowAnalysis
@@ -3212,12 +3199,11 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.Int |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Interval = &GroupInterval_Int{v}
 		case 2:
 			if wireType != 5 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Real", wireType)
@@ -3231,12 +3217,12 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 			v |= uint32(data[iNdEx-3]) << 8
 			v |= uint32(data[iNdEx-2]) << 16
 			v |= uint32(data[iNdEx-1]) << 24
-			m.Interval = &GroupInterval_Real{float32(math.Float32frombits(v))}
+			m.Real = float32(math.Float32frombits(v))
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Days", wireType)
 			}
-			var v int32
+			m.Days = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowAnalysis
@@ -3246,17 +3232,16 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.Days |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Interval = &GroupInterval_Days{v}
 		case 4:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Hours", wireType)
 			}
-			var v int32
+			m.Hours = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowAnalysis
@@ -3266,12 +3251,11 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 				}
 				b := data[iNdEx]
 				iNdEx++
-				v |= (int32(b) & 0x7F) << shift
+				m.Hours |= (int32(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.Interval = &GroupInterval_Hours{v}
 		case 5:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Minutes", wireType)
@@ -3291,8 +3275,7 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Interval = &GroupInterval_Minutes{b}
+			m.Minutes = bool(v != 0)
 		case 6:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Seconds", wireType)
@@ -3312,8 +3295,7 @@ func (m *GroupInterval) Unmarshal(data []byte) error {
 					break
 				}
 			}
-			b := bool(v != 0)
-			m.Interval = &GroupInterval_Seconds{b}
+			m.Seconds = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipAnalysis(data[iNdEx:])
@@ -3444,6 +3426,35 @@ func (m *QueryGroup) Unmarshal(data []byte) error {
 			if err := m.Interval.Unmarshal(data[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OutputField", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowAnalysis
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthAnalysis
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OutputField = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4657,86 +4668,89 @@ var (
 )
 
 var fileDescriptorAnalysis = []byte{
-	// 1291 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x56, 0xcd, 0x6e, 0x23, 0xc5,
-	0x13, 0xcf, 0x78, 0x3c, 0xfe, 0x28, 0x27, 0xd9, 0x49, 0x2b, 0xbb, 0xf1, 0xfa, 0xff, 0x4f, 0x84,
-	0x06, 0xb4, 0xe2, 0x00, 0x4e, 0xe2, 0x45, 0x7b, 0x42, 0x88, 0x49, 0xe2, 0x78, 0x2d, 0x25, 0xf6,
-	0xd2, 0x76, 0x12, 0x96, 0x4b, 0x34, 0xb6, 0xdb, 0xce, 0x48, 0xe3, 0x19, 0xef, 0xcc, 0x38, 0x92,
-	0xe1, 0xc8, 0x81, 0x03, 0x07, 0xf6, 0x8a, 0x78, 0x01, 0x24, 0x38, 0xf3, 0x0c, 0x7b, 0xe4, 0x11,
-	0xf8, 0x38, 0xf0, 0x18, 0x50, 0xdd, 0xf3, 0x69, 0x7b, 0xcd, 0x4a, 0x61, 0x0f, 0xb6, 0xba, 0x3e,
-	0xba, 0xba, 0xea, 0x57, 0xbf, 0xae, 0x1e, 0xd8, 0x34, 0x6c, 0xc3, 0x9a, 0x79, 0xa6, 0x57, 0x9d,
-	0xb8, 0x8e, 0xef, 0x10, 0xc5, 0x98, 0x98, 0x93, 0x5e, 0xe5, 0xc3, 0x91, 0xe9, 0xdf, 0x4c, 0x7b,
-	0xd5, 0xbe, 0x33, 0xde, 0x1f, 0x39, 0x23, 0x67, 0x5f, 0x58, 0x7b, 0xd3, 0xa1, 0x90, 0x84, 0x20,
-	0x56, 0xc1, 0xae, 0xca, 0xc6, 0xc0, 0xf0, 0x0d, 0x8f, 0xf9, 0x81, 0xa8, 0xed, 0x43, 0xb1, 0x6b,
-	0x8e, 0x19, 0x35, 0xec, 0x11, 0x23, 0x04, 0xb2, 0x43, 0xd7, 0x19, 0x97, 0xa5, 0x77, 0xa4, 0xf7,
-	0x65, 0x2a, 0xd6, 0x64, 0x13, 0x32, 0xbe, 0x53, 0xce, 0x08, 0x0d, 0xae, 0xb4, 0x16, 0x90, 0xe3,
-	0x1b, 0xd3, 0x1a, 0xe8, 0xf6, 0xe0, 0x99, 0xeb, 0x0c, 0x4d, 0x8b, 0x35, 0x07, 0x1e, 0x79, 0x08,
-	0x85, 0x3e, 0xd7, 0x5e, 0x9b, 0x03, 0xb1, 0xbb, 0x48, 0xf3, 0x42, 0x6e, 0x0e, 0xc8, 0x2e, 0xc0,
-	0x24, 0x70, 0xe4, 0xc6, 0x8c, 0x30, 0x16, 0x27, 0xd1, 0x56, 0x6d, 0x0a, 0x5b, 0x51, 0xbc, 0x24,
-	0x91, 0x3b, 0x87, 0x23, 0x8f, 0x40, 0x71, 0x79, 0x88, 0xb2, 0x8c, 0x96, 0x52, 0x4d, 0xad, 0x0a,
-	0x90, 0xaa, 0x71, 0x68, 0x1a, 0x98, 0xb5, 0x97, 0x12, 0x6c, 0xe9, 0x21, 0x9e, 0x27, 0x88, 0xc8,
-	0xa9, 0xc9, 0xac, 0x01, 0x07, 0xc0, 0x36, 0xc6, 0x2c, 0x3c, 0x53, 0xac, 0xc9, 0x21, 0x64, 0xfd,
-	0xd9, 0x84, 0x89, 0xa3, 0x36, 0x6b, 0xbb, 0x61, 0xc0, 0xa5, 0xbd, 0xd5, 0x2e, 0x3a, 0x51, 0xe1,
-	0xaa, 0x7d, 0x04, 0x59, 0x2e, 0x11, 0x80, 0x5c, 0xa7, 0x4b, 0x9b, 0xad, 0x86, 0xba, 0x46, 0x4a,
-	0x90, 0x6f, 0xb6, 0xba, 0xf5, 0x46, 0x9d, 0xaa, 0x12, 0x29, 0x82, 0x72, 0x7a, 0xd6, 0xd6, 0xbb,
-	0x6a, 0x86, 0x14, 0x20, 0x7b, 0xd4, 0x6e, 0x9f, 0xa9, 0xb2, 0xf6, 0x9d, 0x04, 0x6a, 0x14, 0xf6,
-	0x9c, 0xf9, 0x06, 0x6f, 0x14, 0xd9, 0x81, 0xfc, 0x08, 0xb3, 0x48, 0x80, 0xc8, 0x71, 0x11, 0x0b,
-	0xad, 0x40, 0xe1, 0x96, 0xb9, 0x9e, 0xe9, 0xd8, 0x1e, 0xa6, 0x26, 0xa3, 0x25, 0x96, 0xc9, 0x36,
-	0x28, 0xec, 0x96, 0xd9, 0xbe, 0x00, 0xa1, 0x48, 0x03, 0x81, 0x1c, 0x40, 0x6e, 0xc8, 0x33, 0xf5,
-	0xca, 0x59, 0xf4, 0x2f, 0xd5, 0xca, 0xab, 0x4a, 0xa1, 0xa1, 0x9f, 0xd6, 0x00, 0xb5, 0x81, 0xa7,
-	0x5d, 0x21, 0xc1, 0x2e, 0xa3, 0xd8, 0x77, 0x49, 0x08, 0x49, 0xb3, 0xa3, 0xdf, 0x1a, 0xa6, 0x65,
-	0xf4, 0x2c, 0x16, 0x1d, 0x47, 0x99, 0x37, 0xb5, 0x7c, 0xf2, 0x18, 0x0a, 0x11, 0xaf, 0x31, 0x20,
-	0xcf, 0x6b, 0x67, 0x21, 0xaf, 0x08, 0x0b, 0x1a, 0x3b, 0x6a, 0x5f, 0x41, 0xf1, 0xb3, 0x29, 0x73,
-	0x67, 0x1d, 0xc7, 0xf5, 0x39, 0x23, 0x44, 0xbe, 0xd7, 0xa9, 0xd6, 0x15, 0x85, 0xa6, 0xc5, 0xfb,
-	0x77, 0x00, 0x8a, 0xe3, 0x0e, 0x98, 0x1b, 0x36, 0xb0, 0x12, 0x46, 0x8f, 0xf7, 0x57, 0xf9, 0x5f,
-	0x9b, 0x7b, 0xd0, 0xc0, 0x51, 0xdb, 0x85, 0x62, 0xac, 0x23, 0x79, 0x90, 0xf5, 0xce, 0x31, 0x36,
-	0x10, 0x17, 0x27, 0xb8, 0x90, 0xb4, 0x5f, 0x24, 0x28, 0xe9, 0xa3, 0x91, 0xcb, 0x46, 0x86, 0x8f,
-	0xd5, 0xbd, 0xe9, 0xfc, 0x4f, 0xa1, 0x64, 0xf4, 0xfb, 0xd3, 0xf1, 0xd4, 0x32, 0x7c, 0x27, 0xca,
-	0x62, 0x2f, 0xaa, 0x31, 0x89, 0x53, 0xd5, 0x13, 0x2f, 0x9a, 0xde, 0xa2, 0x9d, 0xe2, 0x79, 0x89,
-	0xc8, 0x19, 0xd3, 0x6a, 0xb7, 0xea, 0x98, 0x12, 0xd2, 0xe8, 0xb8, 0x7d, 0xd1, 0xea, 0x22, 0xa3,
-	0x30, 0xbb, 0xce, 0xc5, 0x39, 0xf2, 0x09, 0x17, 0xe7, 0xfa, 0xe7, 0xaa, 0x2c, 0x16, 0xcd, 0x96,
-	0x9a, 0x15, 0x15, 0x5c, 0x36, 0x54, 0x45, 0xfb, 0x49, 0x82, 0x8d, 0x86, 0xeb, 0x4c, 0x27, 0x4d,
-	0xdb, 0x67, 0xee, 0xad, 0x61, 0x21, 0xdf, 0x65, 0x13, 0x69, 0xc2, 0x73, 0x56, 0x9e, 0xae, 0x51,
-	0x2e, 0x20, 0x79, 0xb2, 0x2e, 0x33, 0x2c, 0x91, 0x68, 0x06, 0x95, 0x42, 0xe2, 0xda, 0x81, 0x31,
-	0xf3, 0x04, 0xa3, 0xb8, 0xab, 0x90, 0xc8, 0x03, 0x50, 0x6e, 0x9c, 0xa9, 0xcb, 0x19, 0x15, 0xa8,
-	0x03, 0x11, 0xb9, 0x90, 0x1f, 0x9b, 0xf6, 0xd4, 0x67, 0x5e, 0x59, 0x41, 0x4b, 0x01, 0x2d, 0x91,
-	0x82, 0xdb, 0x3c, 0xd6, 0x77, 0x6c, 0xe4, 0x61, 0x2e, 0xb2, 0x85, 0x8a, 0x23, 0x80, 0x82, 0x19,
-	0xe6, 0xa6, 0xfd, 0x25, 0x01, 0x88, 0x26, 0x89, 0x94, 0xdf, 0x84, 0xf2, 0xfe, 0xdc, 0x2d, 0xfd,
-	0x5f, 0xba, 0xc9, 0x62, 0x7f, 0x55, 0xfc, 0x27, 0x77, 0x14, 0x69, 0x11, 0x1f, 0x15, 0xce, 0x8a,
-	0xed, 0x70, 0xd3, 0x1c, 0x44, 0x34, 0x49, 0xe8, 0x0a, 0x8a, 0x71, 0x10, 0xde, 0x04, 0xbc, 0x2f,
-	0x0c, 0x9b, 0xb0, 0x0e, 0x05, 0xbe, 0xf2, 0x71, 0xc2, 0x60, 0x1f, 0x36, 0x82, 0x79, 0xda, 0x1e,
-	0x9e, 0x18, 0x33, 0xec, 0x06, 0x37, 0x9a, 0x5e, 0xdf, 0x65, 0xe8, 0x2a, 0x93, 0xfb, 0x38, 0xeb,
-	0x1c, 0xdb, 0x47, 0x20, 0x98, 0x17, 0x1d, 0xa0, 0x66, 0xb5, 0xbf, 0x25, 0x50, 0x44, 0xa6, 0xc9,
-	0xc5, 0x95, 0xd2, 0x17, 0x37, 0x9e, 0x69, 0x99, 0x7f, 0x9d, 0x69, 0xe4, 0x3d, 0xc8, 0x7a, 0xc8,
-	0x5b, 0x2c, 0x47, 0x4e, 0xb9, 0xc5, 0x44, 0xa7, 0xc2, 0xca, 0xcf, 0xb0, 0xcc, 0xb1, 0xe9, 0x07,
-	0x3d, 0xa3, 0x81, 0x80, 0x9d, 0xcc, 0x39, 0xc3, 0x21, 0xbe, 0x0b, 0xa2, 0x61, 0x0a, 0x0d, 0x25,
-	0xf2, 0x01, 0x14, 0x46, 0xbc, 0xe8, 0xeb, 0xde, 0x4c, 0xb4, 0xab, 0x54, 0xdb, 0x5a, 0xc2, 0x96,
-	0xe6, 0x85, 0xcb, 0xd1, 0x8c, 0x3c, 0x81, 0x75, 0x23, 0x61, 0xb4, 0x57, 0xce, 0x8b, 0x4c, 0xc8,
-	0x32, 0xd9, 0xe9, 0x9c, 0x9f, 0xf6, 0xb3, 0x04, 0x9b, 0xe2, 0xba, 0x7f, 0xc9, 0x28, 0x7b, 0x81,
-	0xe8, 0xf8, 0xff, 0xe1, 0x09, 0x48, 0x4d, 0x28, 0x79, 0x6e, 0x42, 0xbd, 0x0b, 0x1b, 0xc2, 0x10,
-	0x8f, 0xa9, 0xac, 0x18, 0x53, 0xeb, 0x5c, 0x19, 0xcf, 0x37, 0x0d, 0x94, 0x17, 0xbc, 0xb2, 0xb0,
-	0xda, 0xf5, 0x74, 0xb5, 0x34, 0x30, 0x69, 0x5f, 0xe3, 0x45, 0x8a, 0xd3, 0x15, 0x53, 0x6c, 0x1f,
-	0xf2, 0x6e, 0x90, 0xb8, 0x48, 0xb6, 0x54, 0xbb, 0x9f, 0x1e, 0x62, 0x71, 0x55, 0x34, 0xf2, 0xc2,
-	0x63, 0xb2, 0x7c, 0xa6, 0x85, 0x2d, 0xdd, 0x0c, 0xbd, 0xf9, 0x08, 0xee, 0x30, 0x9f, 0x0a, 0x1b,
-	0xaf, 0x13, 0x99, 0x83, 0xdc, 0x1a, 0x5c, 0x1b, 0xc1, 0x2c, 0x97, 0x69, 0x31, 0xd4, 0xe8, 0xbe,
-	0xf6, 0xa3, 0x04, 0x44, 0xef, 0xfb, 0xe6, 0x2d, 0xbb, 0xf0, 0x30, 0xfb, 0x08, 0xb8, 0x5a, 0x78,
-	0x13, 0xa4, 0xf9, 0x41, 0xb3, 0xe4, 0x98, 0x7a, 0xb0, 0x38, 0x27, 0xf0, 0x44, 0x16, 0x0c, 0x6e,
-	0x99, 0x06, 0x02, 0xd2, 0x35, 0x67, 0x4c, 0x26, 0x09, 0x8e, 0xf8, 0xc1, 0x31, 0xc1, 0x17, 0xfb,
-	0x30, 0x79, 0xdd, 0xce, 0xdb, 0xad, 0xee, 0xd9, 0xf3, 0x60, 0x12, 0x9d, 0xe8, 0x4d, 0x5c, 0x8a,
-	0x49, 0xd4, 0xaa, 0x5f, 0x21, 0xf7, 0x51, 0xd7, 0x6d, 0x77, 0x75, 0xfe, 0xb4, 0x7d, 0xcb, 0x5f,
-	0xdb, 0x74, 0x06, 0xe1, 0xe8, 0x5f, 0x00, 0xed, 0xe1, 0xca, 0x64, 0xdf, 0x2a, 0x70, 0xdf, 0xe3,
-	0x43, 0x4b, 0xf1, 0x46, 0xda, 0x82, 0x89, 0x61, 0xdc, 0x83, 0x39, 0xd8, 0xfe, 0x1f, 0xc6, 0x5d,
-	0x74, 0xbb, 0x33, 0x68, 0x8f, 0x42, 0xd0, 0x10, 0x9d, 0x78, 0x76, 0x77, 0xea, 0x97, 0xf5, 0x16,
-	0x22, 0x86, 0x40, 0x76, 0x9f, 0x36, 0x69, 0xf7, 0xb9, 0x9a, 0xd1, 0xbe, 0x91, 0xe0, 0x5e, 0xea,
-	0x50, 0x81, 0xd3, 0xe1, 0x22, 0x4e, 0x3b, 0x2b, 0xb2, 0x7b, 0x9b, 0x28, 0xd5, 0x7e, 0x90, 0xe1,
-	0x5e, 0xf4, 0x04, 0x77, 0x70, 0x54, 0x99, 0x7d, 0x46, 0x3e, 0x41, 0xde, 0x8b, 0xde, 0xb4, 0xed,
-	0xe0, 0x43, 0x6d, 0x69, 0x16, 0x55, 0xa2, 0x1e, 0x2e, 0x7f, 0x24, 0x1e, 0x48, 0xfc, 0x2d, 0x7c,
-	0x66, 0x19, 0x33, 0x36, 0xe0, 0x9f, 0x15, 0x1e, 0x29, 0x2f, 0xf8, 0x26, 0x51, 0xa2, 0x0a, 0x97,
-	0x3e, 0x3f, 0xce, 0x90, 0x48, 0x8b, 0x5f, 0x12, 0x64, 0x95, 0x77, 0x25, 0x66, 0xff, 0x8a, 0x8f,
-	0x8f, 0x27, 0x90, 0x0f, 0x2f, 0x28, 0x79, 0xfd, 0x85, 0xad, 0x6c, 0x2f, 0xaa, 0xc5, 0xbe, 0x23,
-	0xfe, 0x22, 0xc7, 0x1c, 0x25, 0xab, 0x79, 0x5b, 0x29, 0xbf, 0xce, 0x24, 0x62, 0x7c, 0x0c, 0xc5,
-	0xb8, 0x7f, 0x64, 0x55, 0x47, 0x2b, 0x0f, 0x96, 0x0d, 0x7c, 0xf7, 0xd1, 0xde, 0xab, 0xdf, 0xf7,
-	0xd6, 0x5e, 0xfd, 0xb1, 0x27, 0xfd, 0x8a, 0xbf, 0xdf, 0xf0, 0xf7, 0xf2, 0xcf, 0xbd, 0xb5, 0x2f,
-	0x0a, 0x8e, 0xef, 0x99, 0x63, 0x67, 0xd2, 0xeb, 0xe5, 0xc4, 0xe7, 0xfd, 0xe3, 0x7f, 0x02, 0x00,
-	0x00, 0xff, 0xff, 0x4e, 0x4f, 0x64, 0x15, 0x35, 0x0c, 0x00, 0x00,
+	// 1342 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xac, 0x57, 0x4b, 0x8f, 0x1b, 0x45,
+	0x10, 0xce, 0x78, 0x3c, 0x7e, 0x94, 0xf7, 0x31, 0x69, 0x25, 0x59, 0xc7, 0x90, 0x15, 0x0c, 0x28,
+	0xe2, 0x40, 0xbc, 0xbb, 0x0e, 0xca, 0x09, 0x41, 0xbc, 0xd9, 0x8d, 0xb1, 0xb4, 0x6b, 0x87, 0xb6,
+	0x93, 0x10, 0x2e, 0xab, 0xb1, 0xdd, 0x76, 0x46, 0xb2, 0x3d, 0x93, 0x99, 0xf6, 0x4a, 0x86, 0x23,
+	0x07, 0x24, 0x38, 0x10, 0x89, 0x13, 0xfc, 0x02, 0x0e, 0xfc, 0x90, 0x1c, 0xb9, 0x72, 0xe3, 0xf1,
+	0x43, 0xa0, 0xba, 0xe6, 0xe1, 0x59, 0x3b, 0x26, 0x52, 0xc8, 0xc1, 0x56, 0x57, 0x57, 0x75, 0x75,
+	0xd5, 0x57, 0x5f, 0x57, 0xf7, 0xc0, 0x96, 0x3d, 0xb5, 0xc7, 0xf3, 0xc0, 0x09, 0xaa, 0x9e, 0xef,
+	0x4a, 0x97, 0x19, 0xb6, 0xe7, 0x78, 0xbd, 0xca, 0xad, 0x91, 0x23, 0x9f, 0xce, 0x7a, 0xd5, 0xbe,
+	0x3b, 0xd9, 0x1b, 0xb9, 0x23, 0x77, 0x8f, 0xb4, 0xbd, 0xd9, 0x90, 0x24, 0x12, 0x68, 0x14, 0xae,
+	0xaa, 0x6c, 0x0e, 0x6c, 0x69, 0x07, 0x42, 0x86, 0xa2, 0xb5, 0x07, 0xc5, 0xae, 0x33, 0x11, 0xdc,
+	0x9e, 0x8e, 0x04, 0x63, 0x90, 0x1d, 0xfa, 0xee, 0xa4, 0xac, 0xbd, 0xa3, 0x7d, 0xa0, 0x73, 0x1a,
+	0xb3, 0x2d, 0xc8, 0x48, 0xb7, 0x9c, 0xa1, 0x19, 0x1c, 0x59, 0x2d, 0x60, 0xf7, 0x9e, 0x3a, 0xe3,
+	0x41, 0x7d, 0x3a, 0x78, 0xe0, 0xbb, 0x43, 0x67, 0x2c, 0x9a, 0x83, 0x80, 0x5d, 0x87, 0x42, 0x5f,
+	0xcd, 0x9e, 0x39, 0x03, 0x5a, 0x5d, 0xe4, 0x79, 0x92, 0x9b, 0x03, 0x76, 0x03, 0xc0, 0x0b, 0x0d,
+	0x95, 0x32, 0x43, 0xca, 0xa2, 0x17, 0x2f, 0xb5, 0x66, 0x70, 0x39, 0xf6, 0xb7, 0x08, 0xe4, 0xb5,
+	0xdd, 0xb1, 0x9b, 0x60, 0xf8, 0xca, 0x45, 0x59, 0x47, 0x4d, 0xa9, 0x66, 0x56, 0x09, 0xa4, 0x6a,
+	0xe2, 0x9a, 0x87, 0x6a, 0xeb, 0xb9, 0x06, 0x97, 0xeb, 0x11, 0x9e, 0x47, 0x88, 0xc8, 0x7d, 0x47,
+	0x8c, 0x07, 0x0a, 0x80, 0xa9, 0x3d, 0x11, 0xd1, 0x9e, 0x34, 0x66, 0x07, 0x90, 0x95, 0x73, 0x4f,
+	0xd0, 0x56, 0x5b, 0xb5, 0x1b, 0x91, 0xc3, 0x95, 0xb5, 0xd5, 0x2e, 0x1a, 0x71, 0x32, 0xb5, 0x3e,
+	0x82, 0xac, 0x92, 0x18, 0x40, 0xae, 0xd3, 0xe5, 0xcd, 0x56, 0xc3, 0xbc, 0xc4, 0x4a, 0x90, 0x6f,
+	0xb6, 0xba, 0xc7, 0x8d, 0x63, 0x6e, 0x6a, 0xac, 0x08, 0xc6, 0xfd, 0x93, 0x76, 0xbd, 0x6b, 0x66,
+	0x58, 0x01, 0xb2, 0x87, 0xed, 0xf6, 0x89, 0xa9, 0x5b, 0x3f, 0x68, 0x60, 0xc6, 0x6e, 0x4f, 0x85,
+	0xb4, 0x55, 0xa1, 0xd8, 0x0e, 0xe4, 0x47, 0x18, 0xc5, 0x02, 0x88, 0x9c, 0x12, 0x31, 0xd1, 0x0a,
+	0x14, 0xce, 0x85, 0x1f, 0x38, 0xee, 0x34, 0xc0, 0xd0, 0x74, 0xd4, 0x24, 0x32, 0xbb, 0x02, 0x86,
+	0x38, 0x17, 0x53, 0x49, 0x20, 0x14, 0x79, 0x28, 0xb0, 0x7d, 0xc8, 0x0d, 0x55, 0xa4, 0x41, 0x39,
+	0x8b, 0xf6, 0xa5, 0x5a, 0x79, 0x5d, 0x2a, 0x3c, 0xb2, 0xb3, 0x1a, 0x60, 0x36, 0x70, 0xb7, 0xc7,
+	0x48, 0xb0, 0x47, 0xb1, 0xef, 0xd7, 0x09, 0xc8, 0xba, 0x0b, 0xdb, 0x0f, 0xc6, 0xf6, 0x5c, 0x0c,
+	0x94, 0xbb, 0xe0, 0xc4, 0x09, 0x24, 0xbb, 0x05, 0x86, 0x5a, 0x18, 0xa0, 0x17, 0x15, 0xcc, 0x4e,
+	0x14, 0xcc, 0xf2, 0x7e, 0x3c, 0xb4, 0x42, 0xda, 0xed, 0xd4, 0xcf, 0x6d, 0x67, 0x6c, 0xf7, 0xc6,
+	0x22, 0x0e, 0x98, 0x8b, 0x60, 0x36, 0x96, 0xec, 0x36, 0x14, 0xe2, 0x93, 0xb1, 0xe4, 0x6c, 0x19,
+	0x4d, 0x9e, 0x18, 0x5a, 0x5f, 0x43, 0xf1, 0xf3, 0x99, 0xf0, 0xe7, 0x1d, 0xd7, 0x97, 0x8a, 0x53,
+	0x94, 0xf1, 0x59, 0xaa, 0xf8, 0x45, 0x9a, 0x69, 0x29, 0x06, 0xec, 0x83, 0xe1, 0xfa, 0x03, 0xe1,
+	0x47, 0x14, 0xa8, 0x44, 0xde, 0x93, 0xf5, 0x55, 0xf5, 0xd7, 0x56, 0x16, 0x3c, 0x34, 0xb4, 0x6e,
+	0x40, 0x31, 0x99, 0x63, 0x79, 0xd0, 0xeb, 0x9d, 0x7b, 0x48, 0x01, 0x1c, 0x1c, 0xe1, 0x40, 0xb3,
+	0x7e, 0xd7, 0xa0, 0x54, 0x1f, 0x8d, 0x7c, 0x31, 0xb2, 0x25, 0x26, 0xf9, 0xaa, 0xfd, 0xdf, 0x85,
+	0x0d, 0x77, 0x26, 0xbd, 0x99, 0x3c, 0xa3, 0xb9, 0x88, 0xf4, 0xa5, 0x70, 0x2e, 0x24, 0xee, 0x5d,
+	0x28, 0xd9, 0xfd, 0xfe, 0x6c, 0x32, 0x1b, 0xdb, 0xd2, 0xf5, 0xa9, 0xee, 0x5b, 0xb5, 0xdd, 0x18,
+	0x86, 0xc5, 0x56, 0xd5, 0xfa, 0xc2, 0x8a, 0xa7, 0x97, 0x58, 0xf7, 0x31, 0xa4, 0x85, 0xa8, 0x68,
+	0xd9, 0x6a, 0xb7, 0x8e, 0x31, 0x6a, 0xe4, 0xea, 0xbd, 0xf6, 0xc3, 0x56, 0x17, 0x69, 0x8b, 0x09,
+	0x74, 0x1e, 0x9e, 0x22, 0x69, 0x71, 0x70, 0x5a, 0xff, 0xc2, 0xd4, 0x69, 0xd0, 0x6c, 0x99, 0x59,
+	0x4a, 0xf2, 0x51, 0xc3, 0x34, 0xac, 0x1f, 0x35, 0xd8, 0x6c, 0xf8, 0xee, 0xcc, 0x6b, 0x4e, 0xa5,
+	0xf0, 0xcf, 0xed, 0x31, 0x33, 0x41, 0x77, 0x90, 0x8b, 0x2a, 0x2d, 0x83, 0xab, 0xa1, 0x3a, 0x66,
+	0xbe, 0xb0, 0xc7, 0x94, 0x48, 0x86, 0xd3, 0x58, 0xcd, 0x0d, 0xec, 0x79, 0x40, 0xa1, 0x1b, 0x9c,
+	0xc6, 0x8a, 0xc7, 0x4f, 0xdd, 0x99, 0xaf, 0x08, 0xab, 0x26, 0x43, 0x81, 0x95, 0x21, 0x3f, 0x71,
+	0xa6, 0x33, 0x89, 0xdc, 0x31, 0x70, 0xbe, 0xc0, 0x63, 0x51, 0x69, 0x02, 0xd1, 0x77, 0xa7, 0x48,
+	0xf1, 0x5c, 0xa8, 0x89, 0x44, 0xeb, 0xbb, 0x0c, 0x00, 0xd5, 0x8b, 0x42, 0x7b, 0x15, 0xe0, 0x7b,
+	0x17, 0x8e, 0xfc, 0x5b, 0xe9, 0x7a, 0xd3, 0xfa, 0x2a, 0xfd, 0x2f, 0x0e, 0x3c, 0x32, 0xa4, 0xe0,
+	0x44, 0xe9, 0x46, 0x8d, 0xe7, 0x4a, 0xcc, 0xe7, 0x34, 0x14, 0x3c, 0xb1, 0x5a, 0xa9, 0x69, 0x76,
+	0xa5, 0xa6, 0xd6, 0x63, 0x28, 0x26, 0xfb, 0xa8, 0x7a, 0xe0, 0xf9, 0x14, 0x58, 0x8f, 0x0d, 0x28,
+	0xa8, 0x91, 0xc4, 0x8e, 0x86, 0x25, 0xd9, 0x0c, 0xfb, 0x77, 0x7b, 0x78, 0x64, 0xcf, 0xb1, 0x30,
+	0x4a, 0xe9, 0x04, 0x7d, 0x5f, 0xa0, 0xa9, 0xce, 0xae, 0x62, 0x6f, 0x75, 0xa7, 0x12, 0xd1, 0x11,
+	0x41, 0x1c, 0x83, 0x99, 0xb5, 0xfe, 0xd1, 0xc0, 0xa0, 0x64, 0x16, 0x8d, 0x42, 0x4b, 0x37, 0x8a,
+	0xa4, 0x87, 0x66, 0xfe, 0xb3, 0x87, 0xb2, 0xf7, 0x21, 0x1b, 0x20, 0xcb, 0x31, 0x63, 0x3d, 0x65,
+	0x96, 0x1c, 0x0b, 0x4e, 0x5a, 0xb5, 0xc7, 0xd8, 0x99, 0x38, 0x32, 0x2e, 0x22, 0x09, 0xec, 0x1a,
+	0xe4, 0xdc, 0xe1, 0x10, 0xef, 0x21, 0xaa, 0xa1, 0xc1, 0x23, 0x89, 0x7d, 0x08, 0x85, 0x91, 0x4a,
+	0xfa, 0xac, 0x37, 0xa7, 0x1a, 0x96, 0x6a, 0x97, 0x57, 0xe0, 0xe7, 0x79, 0x32, 0x39, 0x9c, 0xb3,
+	0x3b, 0xb0, 0x61, 0x2f, 0xc8, 0x1d, 0x94, 0xf3, 0x14, 0x09, 0x5b, 0xe5, 0x3d, 0xbf, 0x60, 0x67,
+	0xfd, 0xaa, 0xc1, 0x16, 0x35, 0x87, 0xaf, 0x04, 0x17, 0xcf, 0x10, 0x1d, 0xf9, 0x3f, 0xae, 0x9c,
+	0x54, 0x47, 0xd4, 0x2f, 0x74, 0xc4, 0xf7, 0x60, 0x93, 0x14, 0x49, 0x5b, 0xcc, 0x52, 0x5b, 0xdc,
+	0x50, 0x93, 0x49, 0x3f, 0xb5, 0xc0, 0x78, 0xa6, 0x32, 0x8b, 0xb2, 0xdd, 0x48, 0x67, 0xcb, 0x43,
+	0x95, 0xf5, 0x0d, 0x9e, 0xa9, 0x24, 0x5c, 0xea, 0x79, 0x7b, 0x90, 0xf7, 0xc3, 0xc0, 0x29, 0xd8,
+	0x52, 0xed, 0x6a, 0xba, 0xe5, 0x25, 0x59, 0xf1, 0xd8, 0x0a, 0xb7, 0xc9, 0xaa, 0x0e, 0x18, 0x95,
+	0x74, 0x2b, 0xb2, 0x56, 0x2d, 0xbf, 0x23, 0x24, 0x27, 0x9d, 0xca, 0x13, 0x99, 0x83, 0xdc, 0x1a,
+	0x9c, 0xd9, 0xe1, 0xdd, 0xa1, 0xf3, 0x62, 0x34, 0x53, 0x97, 0xd6, 0x2f, 0x1a, 0xb0, 0x7a, 0x5f,
+	0x3a, 0xe7, 0xe2, 0x61, 0x80, 0xd1, 0xc7, 0xc0, 0xd5, 0xa2, 0xc3, 0xa2, 0x5d, 0xec, 0x39, 0x2b,
+	0x86, 0xa9, 0x0b, 0x52, 0x71, 0x02, 0x77, 0x14, 0xe1, 0x45, 0xa1, 0xf3, 0x50, 0x40, 0xba, 0xe6,
+	0x6c, 0xcf, 0x5b, 0xe0, 0x88, 0x0f, 0x1c, 0x0f, 0x5f, 0x08, 0x07, 0x8b, 0xdb, 0xf4, 0xb4, 0xdd,
+	0xea, 0x9e, 0x3c, 0x09, 0x9b, 0xd2, 0x51, 0xbd, 0x89, 0x43, 0x6a, 0x4a, 0xad, 0xe3, 0xc7, 0xc8,
+	0x7d, 0x9c, 0xeb, 0xb6, 0xbb, 0x75, 0x75, 0x95, 0x7e, 0xaf, 0x6e, 0xf7, 0x74, 0x04, 0xd1, 0x45,
+	0xb1, 0x04, 0xda, 0xf5, 0xb5, 0xc1, 0xbe, 0x51, 0xe0, 0x7e, 0xc2, 0x8b, 0x9d, 0xe3, 0x89, 0x9c,
+	0x12, 0x13, 0x23, 0xbf, 0xfb, 0x17, 0x60, 0x7b, 0x3b, 0xf2, 0xbb, 0x6c, 0xf6, 0xda, 0xa0, 0xdd,
+	0x8c, 0x40, 0x43, 0x74, 0x92, 0x36, 0xde, 0x39, 0x7e, 0x74, 0xdc, 0x42, 0xc4, 0x10, 0xc8, 0xee,
+	0x67, 0x4d, 0xde, 0x7d, 0x62, 0x66, 0xac, 0x6f, 0x35, 0xd8, 0x4e, 0x6d, 0x4a, 0x38, 0x1d, 0x2c,
+	0xe3, 0xb4, 0xb3, 0x26, 0xba, 0x37, 0x89, 0x52, 0xed, 0x67, 0x1d, 0xb6, 0xe3, 0x0b, 0xbb, 0x83,
+	0xad, 0xca, 0xe9, 0x0b, 0xf6, 0x09, 0xf2, 0x9e, 0x6a, 0xd3, 0x9e, 0x86, 0x0f, 0xc3, 0x95, 0x5e,
+	0x54, 0x89, 0x6b, 0xb8, 0xfa, 0x28, 0xdd, 0xd7, 0xd8, 0xa7, 0x50, 0x4a, 0xbd, 0x3b, 0x58, 0x79,
+	0xc9, 0x76, 0xe1, 0xe5, 0x5a, 0xa4, 0x59, 0x7e, 0xa5, 0x9c, 0x20, 0x8f, 0x96, 0x9f, 0x1d, 0x6c,
+	0xdd, 0x5b, 0xa5, 0x92, 0x90, 0x7f, 0xcd, 0x4b, 0xe5, 0x0e, 0xe4, 0xa3, 0xf3, 0xc9, 0x5e, 0x7e,
+	0x5e, 0x2b, 0x57, 0x96, 0xa7, 0x69, 0xdd, 0xa1, 0xba, 0x9b, 0x13, 0x8a, 0xb2, 0xf5, 0xb4, 0xad,
+	0x94, 0x5f, 0xa6, 0x22, 0x1f, 0x1f, 0x43, 0x31, 0x29, 0x1f, 0x5b, 0x57, 0xd0, 0x04, 0x87, 0x25,
+	0x4a, 0x1c, 0x1e, 0xbc, 0xf8, 0x73, 0xf7, 0xd2, 0x8b, 0xbf, 0x76, 0xb5, 0xdf, 0xf0, 0xf7, 0x07,
+	0xfe, 0x9e, 0xff, 0xbd, 0x7b, 0x09, 0xb6, 0xf1, 0x9b, 0xa3, 0xea, 0xca, 0xc0, 0x99, 0xb8, 0xd5,
+	0x91, 0xef, 0xf5, 0x1f, 0x68, 0x5f, 0x16, 0x42, 0xd1, 0xeb, 0xf5, 0x72, 0xf4, 0x81, 0x71, 0xfb,
+	0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xbc, 0xec, 0x78, 0x71, 0xb7, 0x0c, 0x00, 0x00,
 }

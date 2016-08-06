@@ -9,11 +9,15 @@ import (
 	"storage"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/otsimo/health"
+	tlscheck "github.com/otsimo/health/tls"
 	pb "github.com/otsimo/otsimopb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 	"gopkg.in/mgo.v2/bson"
+	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -22,13 +26,7 @@ type Server struct {
 	Oidc    *Client
 }
 
-func (s *Server) ListenGRPC() {
-	grpcPort := s.Config.GetGrpcPortString()
-	//Listen
-	lis, err := net.Listen("tcp", grpcPort)
-	if err != nil {
-		log.Fatalf("server.go: failed to listen %v for grpc", err)
-	}
+func init() {
 	var l = &log.Logger{
 		Out:       os.Stdout,
 		Formatter: &log.TextFormatter{FullTimestamp: true},
@@ -36,6 +34,15 @@ func (s *Server) ListenGRPC() {
 		Level:     log.GetLevel(),
 	}
 	grpclog.SetLogger(l)
+}
+
+func (s *Server) ListenGRPC() error {
+	grpcPort := s.Config.GetGrpcPortString()
+	//Listen
+	lis, err := net.Listen("tcp", grpcPort)
+	if err != nil {
+		return fmt.Errorf("server.go: failed to listen: %v", err)
+	}
 
 	var opts []grpc.ServerOption
 	if s.Config.TlsCertFile != "" && s.Config.TlsKeyFile != "" {
@@ -44,17 +51,19 @@ func (s *Server) ListenGRPC() {
 			log.Fatalf("server.go: Failed to generate credentials %v", err)
 		}
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
+		go http.ListenAndServe(s.Config.GetHealthPortString(), health.New(tlscheck.New(s.Config.TlsCertFile, s.Config.TlsKeyFile, time.Hour*24*21)))
+	} else {
+		go http.ListenAndServe(s.Config.GetHealthPortString(), health.New())
 	}
-	grpcServer := grpc.NewServer(opts...)
 
+	grpcServer := grpc.NewServer(opts...)
 	catalogGrpc := &catalogGrpcServer{
 		server: s,
 	}
-
 	pb.RegisterCatalogServiceServer(grpcServer, catalogGrpc)
 	log.Infof("server.go: Binding %s for grpc", grpcPort)
 	//Serve
-	grpcServer.Serve(lis)
+	return grpcServer.Serve(lis)
 }
 
 func NewServer(config *Config, driver storage.Driver) *Server {

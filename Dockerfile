@@ -1,9 +1,10 @@
-FROM centurylink/ca-certs
+FROM alpine:3.4
 MAINTAINER Sercan Degirmenci <sercan@otsimo.com>
 
-ADD bin/otsimo-catalog-linux-amd64 /opt/otsimo-catalog/bin/otsimo-catalog
+RUN apk add --update ca-certificates git && rm -rf /var/cache/apk/*
+
+ADD catalog-linux-amd64 /opt/otsimo/catalog
 
 EXPOSE 18857
 
-# enable verbose debug for now
-CMD ["/opt/otsimo-catalog/bin/otsimo-catalog","--debug","--storage","mongodb"]
+CMD ["/opt/otsimo/catalog"]

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -68,6 +69,8 @@ type ProviderConfig struct {
 	UserInfoEndpoint     *url.URL
 	KeysEndpoint         *url.URL // Required
 	RegistrationEndpoint *url.URL
+	EndSessionEndpoint   *url.URL
+	CheckSessionIFrame   *url.URL
 
 	// Servers MAY choose not to advertise some supported scope values even when this
 	// parameter is used, although those defined in OpenID Core SHOULD be listed, if supported.
@@ -169,6 +172,8 @@ type encodableProviderConfig struct {
 	UserInfoEndpoint     string `json:"userinfo_endpoint,omitempty"`
 	KeysEndpoint         string `json:"jwks_uri"`
 	RegistrationEndpoint string `json:"registration_endpoint,omitempty"`
+	EndSessionEndpoint   string `json:"end_session_endpoint,omitempty"`
+	CheckSessionIFrame   string `json:"check_session_iframe,omitempty"`
 
 	// Use 'omitempty' for all slices as per OIDC spec:
 	// "Claims that return multiple values are represented as JSON arrays.
@@ -218,6 +223,8 @@ func (cfg ProviderConfig) toEncodableStruct() encodableProviderConfig {
 		UserInfoEndpoint:                           uriToString(cfg.UserInfoEndpoint),
 		KeysEndpoint:                               uriToString(cfg.KeysEndpoint),
 		RegistrationEndpoint:                       uriToString(cfg.RegistrationEndpoint),
+		EndSessionEndpoint:                         uriToString(cfg.EndSessionEndpoint),
+		CheckSessionIFrame:                         uriToString(cfg.CheckSessionIFrame),
 		ScopesSupported:                            cfg.ScopesSupported,
 		ResponseTypesSupported:                     cfg.ResponseTypesSupported,
 		ResponseModesSupported:                     cfg.ResponseModesSupported,
@@ -259,6 +266,8 @@ func (e encodableProviderConfig) toStruct() (ProviderConfig, error) {
 		UserInfoEndpoint:                           p.parseURI(e.UserInfoEndpoint, "userinfo_endpoint"),
 		KeysEndpoint:                               p.parseURI(e.KeysEndpoint, "jwks_uri"),
 		RegistrationEndpoint:                       p.parseURI(e.RegistrationEndpoint, "registration_endpoint"),
+		EndSessionEndpoint:                         p.parseURI(e.EndSessionEndpoint, "end_session_endpoint"),
+		CheckSessionIFrame:                         p.parseURI(e.CheckSessionIFrame, "check_session_iframe"),
 		ScopesSupported:                            e.ScopesSupported,
 		ResponseTypesSupported:                     e.ResponseTypesSupported,
 		ResponseModesSupported:                     e.ResponseModesSupported,
@@ -363,6 +372,8 @@ func (p ProviderConfig) Valid() error {
 		{p.UserInfoEndpoint, "userinfo_endpoint", false},
 		{p.KeysEndpoint, "jwks_uri", true},
 		{p.RegistrationEndpoint, "registration_endpoint", false},
+		{p.EndSessionEndpoint, "end_session_endpoint", false},
+		{p.CheckSessionIFrame, "check_session_iframe", false},
 		{p.ServiceDocs, "service_documentation", false},
 		{p.Policy, "op_policy_uri", false},
 		{p.TermsOfService, "op_tos_uri", false},
@@ -536,7 +547,7 @@ func (s *ProviderConfigSyncer) sync() (time.Duration, error) {
 		s.initialSyncDone = true
 	}
 
-	log.Infof("Updating provider config: config=%#v", cfg)
+	log.Debugf("Updating provider config: config=%#v", cfg)
 
 	return nextSyncAfter(cfg.ExpiresAt, s.clock), nil
 }
@@ -618,7 +629,11 @@ func NewHTTPProviderConfigGetter(hc phttp.Client, issuerURL string) *httpProvide
 }
 
 func (r *httpProviderConfigGetter) Get() (cfg ProviderConfig, err error) {
-	req, err := http.NewRequest("GET", r.issuerURL+discoveryConfigPath, nil)
+	// If the Issuer value contains a path component, any terminating / MUST be removed before
+	// appending /.well-known/openid-configuration.
+	// https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationRequest
+	discoveryURL := strings.TrimSuffix(r.issuerURL, "/") + discoveryConfigPath
+	req, err := http.NewRequest("GET", discoveryURL, nil)
 	if err != nil {
 		return
 	}

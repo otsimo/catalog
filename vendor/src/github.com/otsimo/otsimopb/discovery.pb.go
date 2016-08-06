@@ -14,6 +14,8 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
+import errors "errors"
+
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -22,22 +24,25 @@ var _ = fmt.Errorf
 var _ = math.Inf
 
 type OtsimoServices struct {
-	Environment          string            `protobuf:"bytes,1,opt,name=environment,proto3" json:"environment,omitempty"`
-	Issuer               string            `protobuf:"bytes,2,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	IsProduction         bool              `protobuf:"varint,3,opt,name=is_production,json=isProduction,proto3" json:"is_production,omitempty"`
-	UseTls               bool              `protobuf:"varint,4,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
-	RegistryGrpc         string            `protobuf:"bytes,5,opt,name=registry_grpc,json=registryGrpc,proto3" json:"registry_grpc,omitempty"`
-	ListenerGrpc         string            `protobuf:"bytes,6,opt,name=listener_grpc,json=listenerGrpc,proto3" json:"listener_grpc,omitempty"`
-	WatchGrpc            string            `protobuf:"bytes,7,opt,name=watch_grpc,json=watchGrpc,proto3" json:"watch_grpc,omitempty"`
-	CatalogGrpc          string            `protobuf:"bytes,8,opt,name=catalog_grpc,json=catalogGrpc,proto3" json:"catalog_grpc,omitempty"`
-	ContentGrpc          string            `protobuf:"bytes,9,opt,name=content_grpc,json=contentGrpc,proto3" json:"content_grpc,omitempty"`
-	DashboardGrpc        string            `protobuf:"bytes,10,opt,name=dashboard_grpc,json=dashboardGrpc,proto3" json:"dashboard_grpc,omitempty"`
-	ApiGrpc              string            `protobuf:"bytes,11,opt,name=api_grpc,json=apiGrpc,proto3" json:"api_grpc,omitempty"`
-	GameContent          string            `protobuf:"bytes,12,opt,name=game_content,json=gameContent,proto3" json:"game_content,omitempty"`
-	Accounts             string            `protobuf:"bytes,13,opt,name=accounts,proto3" json:"accounts,omitempty"`
-	RegistryHttp         string            `protobuf:"bytes,14,opt,name=registry_http,json=registryHttp,proto3" json:"registry_http,omitempty"`
-	Services             map[string]string `protobuf:"bytes,20,rep,name=services" json:"services,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	GameStorageProviders map[string]string `protobuf:"bytes,21,rep,name=game_storage_providers,json=gameStorageProviders" json:"game_storage_providers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Environment   string `protobuf:"bytes,1,opt,name=environment,proto3" json:"environment,omitempty"`
+	Issuer        string `protobuf:"bytes,2,opt,name=issuer,proto3" json:"issuer,omitempty"`
+	IsProduction  bool   `protobuf:"varint,3,opt,name=is_production,json=isProduction,proto3" json:"is_production,omitempty"`
+	UseTls        bool   `protobuf:"varint,4,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
+	RegistryGrpc  string `protobuf:"bytes,5,opt,name=registry_grpc,json=registryGrpc,proto3" json:"registry_grpc,omitempty"`
+	ListenerGrpc  string `protobuf:"bytes,6,opt,name=listener_grpc,json=listenerGrpc,proto3" json:"listener_grpc,omitempty"`
+	WatchGrpc     string `protobuf:"bytes,7,opt,name=watch_grpc,json=watchGrpc,proto3" json:"watch_grpc,omitempty"`
+	CatalogGrpc   string `protobuf:"bytes,8,opt,name=catalog_grpc,json=catalogGrpc,proto3" json:"catalog_grpc,omitempty"`
+	ContentGrpc   string `protobuf:"bytes,9,opt,name=content_grpc,json=contentGrpc,proto3" json:"content_grpc,omitempty"`
+	DashboardGrpc string `protobuf:"bytes,10,opt,name=dashboard_grpc,json=dashboardGrpc,proto3" json:"dashboard_grpc,omitempty"`
+	ApiGrpc       string `protobuf:"bytes,11,opt,name=api_grpc,json=apiGrpc,proto3" json:"api_grpc,omitempty"`
+	// GameContent is registry service http url
+	GameContent          string                         `protobuf:"bytes,12,opt,name=game_content,json=gameContent,proto3" json:"game_content,omitempty"`
+	Accounts             string                         `protobuf:"bytes,13,opt,name=accounts,proto3" json:"accounts,omitempty"`
+	AnalyticsGrpc        string                         `protobuf:"bytes,14,opt,name=analytics_grpc,json=analyticsGrpc,proto3" json:"analytics_grpc,omitempty"`
+	Services             map[string]string              `protobuf:"bytes,20,rep,name=services" json:"services,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	GameStorageProviders map[string]string              `protobuf:"bytes,21,rep,name=game_storage_providers,json=gameStorageProviders" json:"game_storage_providers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	SelfLearningConfigs  map[string]*SelfLearningConfig `protobuf:"bytes,22,rep,name=self_learning_configs,json=selfLearningConfigs" json:"self_learning_configs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value"`
+	Configs              map[string]string              `protobuf:"bytes,23,rep,name=configs" json:"configs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (m *OtsimoServices) Reset()                    { *m = OtsimoServices{} }
@@ -46,10 +51,12 @@ func (*OtsimoServices) ProtoMessage()               {}
 func (*OtsimoServices) Descriptor() ([]byte, []int) { return fileDescriptorDiscovery, []int{0} }
 
 type DiscoveryRequest struct {
-	Environment string `protobuf:"bytes,1,opt,name=environment,proto3" json:"environment,omitempty"`
-	SdkVersion  string `protobuf:"bytes,2,opt,name=sdk_version,json=sdkVersion,proto3" json:"sdk_version,omitempty"`
-	OsName      string `protobuf:"bytes,3,opt,name=os_name,json=osName,proto3" json:"os_name,omitempty"`
-	CountryCode string `protobuf:"bytes,4,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	Environment      string `protobuf:"bytes,1,opt,name=environment,proto3" json:"environment,omitempty"`
+	SdkVersion       string `protobuf:"bytes,2,opt,name=sdk_version,json=sdkVersion,proto3" json:"sdk_version,omitempty"`
+	OsName           string `protobuf:"bytes,3,opt,name=os_name,json=osName,proto3" json:"os_name,omitempty"`
+	CountryCode      string `protobuf:"bytes,4,opt,name=country_code,json=countryCode,proto3" json:"country_code,omitempty"`
+	AppBundleId      string `protobuf:"bytes,5,opt,name=app_bundle_id,json=appBundleId,proto3" json:"app_bundle_id,omitempty"`
+	AppBundleVersion string `protobuf:"bytes,6,opt,name=app_bundle_version,json=appBundleVersion,proto3" json:"app_bundle_version,omitempty"`
 }
 
 func (m *DiscoveryRequest) Reset()                    { *m = DiscoveryRequest{} }
@@ -57,14 +64,40 @@ func (m *DiscoveryRequest) String() string            { return proto.CompactText
 func (*DiscoveryRequest) ProtoMessage()               {}
 func (*DiscoveryRequest) Descriptor() ([]byte, []int) { return fileDescriptorDiscovery, []int{1} }
 
+type SelfLearningSegment struct {
+	Title     string              `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
+	BaseQuery *ContentListRequest `protobuf:"bytes,2,opt,name=base_query,json=baseQuery" json:"base_query,omitempty"`
+}
+
+func (m *SelfLearningSegment) Reset()                    { *m = SelfLearningSegment{} }
+func (m *SelfLearningSegment) String() string            { return proto.CompactTextString(m) }
+func (*SelfLearningSegment) ProtoMessage()               {}
+func (*SelfLearningSegment) Descriptor() ([]byte, []int) { return fileDescriptorDiscovery, []int{2} }
+
+type SelfLearningConfig struct {
+	Language string                 `protobuf:"bytes,1,opt,name=language,proto3" json:"language,omitempty"`
+	Segments []*SelfLearningSegment `protobuf:"bytes,2,rep,name=segments" json:"segments,omitempty"`
+}
+
+func (m *SelfLearningConfig) Reset()                    { *m = SelfLearningConfig{} }
+func (m *SelfLearningConfig) String() string            { return proto.CompactTextString(m) }
+func (*SelfLearningConfig) ProtoMessage()               {}
+func (*SelfLearningConfig) Descriptor() ([]byte, []int) { return fileDescriptorDiscovery, []int{3} }
+
 func init() {
 	proto.RegisterType((*OtsimoServices)(nil), "apipb.OtsimoServices")
 	proto.RegisterType((*DiscoveryRequest)(nil), "apipb.DiscoveryRequest")
+	proto.RegisterType((*SelfLearningSegment)(nil), "apipb.SelfLearningSegment")
+	proto.RegisterType((*SelfLearningConfig)(nil), "apipb.SelfLearningConfig")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
 var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion3
 
 // Client API for Discovery service
 
@@ -99,16 +132,22 @@ func RegisterDiscoveryServer(s *grpc.Server, srv DiscoveryServer) {
 	s.RegisterService(&_Discovery_serviceDesc, srv)
 }
 
-func _Discovery_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _Discovery_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DiscoveryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(DiscoveryServer).Get(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(DiscoveryServer).Get(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apipb.Discovery/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DiscoveryServer).Get(ctx, req.(*DiscoveryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _Discovery_serviceDesc = grpc.ServiceDesc{
@@ -120,7 +159,8 @@ var _Discovery_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Discovery_Get_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: fileDescriptorDiscovery,
 }
 
 func (m *OtsimoServices) Marshal() (data []byte, err error) {
@@ -224,11 +264,11 @@ func (m *OtsimoServices) MarshalTo(data []byte) (int, error) {
 		i = encodeVarintDiscovery(data, i, uint64(len(m.Accounts)))
 		i += copy(data[i:], m.Accounts)
 	}
-	if len(m.RegistryHttp) > 0 {
+	if len(m.AnalyticsGrpc) > 0 {
 		data[i] = 0x72
 		i++
-		i = encodeVarintDiscovery(data, i, uint64(len(m.RegistryHttp)))
-		i += copy(data[i:], m.RegistryHttp)
+		i = encodeVarintDiscovery(data, i, uint64(len(m.AnalyticsGrpc)))
+		i += copy(data[i:], m.AnalyticsGrpc)
 	}
 	if len(m.Services) > 0 {
 		for k, _ := range m.Services {
@@ -256,6 +296,52 @@ func (m *OtsimoServices) MarshalTo(data []byte) (int, error) {
 			data[i] = 0x1
 			i++
 			v := m.GameStorageProviders[k]
+			mapSize := 1 + len(k) + sovDiscovery(uint64(len(k))) + 1 + len(v) + sovDiscovery(uint64(len(v)))
+			i = encodeVarintDiscovery(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintDiscovery(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintDiscovery(data, i, uint64(len(v)))
+			i += copy(data[i:], v)
+		}
+	}
+	if len(m.SelfLearningConfigs) > 0 {
+		for k, _ := range m.SelfLearningConfigs {
+			data[i] = 0xb2
+			i++
+			data[i] = 0x1
+			i++
+			v := m.SelfLearningConfigs[k]
+			if v == nil {
+				return 0, errors.New("proto: map has nil element")
+			}
+			msgSize := v.Size()
+			mapSize := 1 + len(k) + sovDiscovery(uint64(len(k))) + 1 + msgSize + sovDiscovery(uint64(msgSize))
+			i = encodeVarintDiscovery(data, i, uint64(mapSize))
+			data[i] = 0xa
+			i++
+			i = encodeVarintDiscovery(data, i, uint64(len(k)))
+			i += copy(data[i:], k)
+			data[i] = 0x12
+			i++
+			i = encodeVarintDiscovery(data, i, uint64(v.Size()))
+			n1, err := v.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n1
+		}
+	}
+	if len(m.Configs) > 0 {
+		for k, _ := range m.Configs {
+			data[i] = 0xba
+			i++
+			data[i] = 0x1
+			i++
+			v := m.Configs[k]
 			mapSize := 1 + len(k) + sovDiscovery(uint64(len(k))) + 1 + len(v) + sovDiscovery(uint64(len(v)))
 			i = encodeVarintDiscovery(data, i, uint64(mapSize))
 			data[i] = 0xa
@@ -309,6 +395,88 @@ func (m *DiscoveryRequest) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintDiscovery(data, i, uint64(len(m.CountryCode)))
 		i += copy(data[i:], m.CountryCode)
+	}
+	if len(m.AppBundleId) > 0 {
+		data[i] = 0x2a
+		i++
+		i = encodeVarintDiscovery(data, i, uint64(len(m.AppBundleId)))
+		i += copy(data[i:], m.AppBundleId)
+	}
+	if len(m.AppBundleVersion) > 0 {
+		data[i] = 0x32
+		i++
+		i = encodeVarintDiscovery(data, i, uint64(len(m.AppBundleVersion)))
+		i += copy(data[i:], m.AppBundleVersion)
+	}
+	return i, nil
+}
+
+func (m *SelfLearningSegment) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SelfLearningSegment) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Title) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDiscovery(data, i, uint64(len(m.Title)))
+		i += copy(data[i:], m.Title)
+	}
+	if m.BaseQuery != nil {
+		data[i] = 0x12
+		i++
+		i = encodeVarintDiscovery(data, i, uint64(m.BaseQuery.Size()))
+		n2, err := m.BaseQuery.MarshalTo(data[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
+}
+
+func (m *SelfLearningConfig) Marshal() (data []byte, err error) {
+	size := m.Size()
+	data = make([]byte, size)
+	n, err := m.MarshalTo(data)
+	if err != nil {
+		return nil, err
+	}
+	return data[:n], nil
+}
+
+func (m *SelfLearningConfig) MarshalTo(data []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Language) > 0 {
+		data[i] = 0xa
+		i++
+		i = encodeVarintDiscovery(data, i, uint64(len(m.Language)))
+		i += copy(data[i:], m.Language)
+	}
+	if len(m.Segments) > 0 {
+		for _, msg := range m.Segments {
+			data[i] = 0x12
+			i++
+			i = encodeVarintDiscovery(data, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(data[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -393,7 +561,7 @@ func (m *OtsimoServices) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovDiscovery(uint64(l))
 	}
-	l = len(m.RegistryHttp)
+	l = len(m.AnalyticsGrpc)
 	if l > 0 {
 		n += 1 + l + sovDiscovery(uint64(l))
 	}
@@ -407,6 +575,26 @@ func (m *OtsimoServices) Size() (n int) {
 	}
 	if len(m.GameStorageProviders) > 0 {
 		for k, v := range m.GameStorageProviders {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovDiscovery(uint64(len(k))) + 1 + len(v) + sovDiscovery(uint64(len(v)))
+			n += mapEntrySize + 2 + sovDiscovery(uint64(mapEntrySize))
+		}
+	}
+	if len(m.SelfLearningConfigs) > 0 {
+		for k, v := range m.SelfLearningConfigs {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+			}
+			mapEntrySize := 1 + len(k) + sovDiscovery(uint64(len(k))) + 1 + l + sovDiscovery(uint64(l))
+			n += mapEntrySize + 2 + sovDiscovery(uint64(mapEntrySize))
+		}
+	}
+	if len(m.Configs) > 0 {
+		for k, v := range m.Configs {
 			_ = k
 			_ = v
 			mapEntrySize := 1 + len(k) + sovDiscovery(uint64(len(k))) + 1 + len(v) + sovDiscovery(uint64(len(v)))
@@ -434,6 +622,44 @@ func (m *DiscoveryRequest) Size() (n int) {
 	l = len(m.CountryCode)
 	if l > 0 {
 		n += 1 + l + sovDiscovery(uint64(l))
+	}
+	l = len(m.AppBundleId)
+	if l > 0 {
+		n += 1 + l + sovDiscovery(uint64(l))
+	}
+	l = len(m.AppBundleVersion)
+	if l > 0 {
+		n += 1 + l + sovDiscovery(uint64(l))
+	}
+	return n
+}
+
+func (m *SelfLearningSegment) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Title)
+	if l > 0 {
+		n += 1 + l + sovDiscovery(uint64(l))
+	}
+	if m.BaseQuery != nil {
+		l = m.BaseQuery.Size()
+		n += 1 + l + sovDiscovery(uint64(l))
+	}
+	return n
+}
+
+func (m *SelfLearningConfig) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.Language)
+	if l > 0 {
+		n += 1 + l + sovDiscovery(uint64(l))
+	}
+	if len(m.Segments) > 0 {
+		for _, e := range m.Segments {
+			l = e.Size()
+			n += 1 + l + sovDiscovery(uint64(l))
+		}
 	}
 	return n
 }
@@ -841,7 +1067,7 @@ func (m *OtsimoServices) Unmarshal(data []byte) error {
 			iNdEx = postIndex
 		case 14:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RegistryHttp", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field AnalyticsGrpc", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -866,7 +1092,7 @@ func (m *OtsimoServices) Unmarshal(data []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.RegistryHttp = string(data[iNdEx:postIndex])
+			m.AnalyticsGrpc = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 20:
 			if wireType != 2 {
@@ -1090,6 +1316,233 @@ func (m *OtsimoServices) Unmarshal(data []byte) error {
 			}
 			m.GameStorageProviders[mapkey] = mapvalue
 			iNdEx = postIndex
+		case 22:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SelfLearningConfigs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var mapmsglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				mapmsglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if mapmsglen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postmsgIndex := iNdEx + mapmsglen
+			if mapmsglen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			if postmsgIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := &SelfLearningConfig{}
+			if err := mapvalue.Unmarshal(data[iNdEx:postmsgIndex]); err != nil {
+				return err
+			}
+			iNdEx = postmsgIndex
+			if m.SelfLearningConfigs == nil {
+				m.SelfLearningConfigs = make(map[string]*SelfLearningConfig)
+			}
+			m.SelfLearningConfigs[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 23:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Configs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			var keykey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				keykey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapkey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapkey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapkey := int(stringLenmapkey)
+			if intStringLenmapkey < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postStringIndexmapkey := iNdEx + intStringLenmapkey
+			if postStringIndexmapkey > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapkey := string(data[iNdEx:postStringIndexmapkey])
+			iNdEx = postStringIndexmapkey
+			var valuekey uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				valuekey |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			var stringLenmapvalue uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLenmapvalue |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLenmapvalue := int(stringLenmapvalue)
+			if intStringLenmapvalue < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+			if postStringIndexmapvalue > l {
+				return io.ErrUnexpectedEOF
+			}
+			mapvalue := string(data[iNdEx:postStringIndexmapvalue])
+			iNdEx = postStringIndexmapvalue
+			if m.Configs == nil {
+				m.Configs = make(map[string]string)
+			}
+			m.Configs[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDiscovery(data[iNdEx:])
@@ -1256,6 +1709,286 @@ func (m *DiscoveryRequest) Unmarshal(data []byte) error {
 			}
 			m.CountryCode = string(data[iNdEx:postIndex])
 			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppBundleId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AppBundleId = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AppBundleVersion", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AppBundleVersion = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDiscovery(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SelfLearningSegment) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDiscovery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SelfLearningSegment: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SelfLearningSegment: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Title", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Title = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BaseQuery", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.BaseQuery == nil {
+				m.BaseQuery = &ContentListRequest{}
+			}
+			if err := m.BaseQuery.Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipDiscovery(data[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SelfLearningConfig) Unmarshal(data []byte) error {
+	l := len(data)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowDiscovery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := data[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SelfLearningConfig: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SelfLearningConfig: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Language", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Language = string(data[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Segments", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowDiscovery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthDiscovery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Segments = append(m.Segments, &SelfLearningSegment{})
+			if err := m.Segments[len(m.Segments)-1].Unmarshal(data[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipDiscovery(data[iNdEx:])
@@ -1383,41 +2116,55 @@ var (
 )
 
 var fileDescriptorDiscovery = []byte{
-	// 573 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x54, 0xcb, 0x6e, 0x13, 0x4b,
-	0x10, 0x8d, 0xe3, 0x1b, 0x3f, 0xca, 0x8f, 0x1b, 0xb5, 0x9c, 0x64, 0x62, 0x09, 0x63, 0x1c, 0x21,
-	0x65, 0x83, 0x2d, 0x05, 0x21, 0x21, 0x58, 0x20, 0x25, 0x20, 0xb3, 0x82, 0xc8, 0x41, 0x2c, 0xd8,
-	0x8c, 0xe6, 0xd1, 0x8c, 0x5b, 0xb1, 0xa7, 0x87, 0xee, 0x1e, 0x23, 0x7f, 0x03, 0x1b, 0xf8, 0xab,
-	0x2c, 0xf3, 0x09, 0x3c, 0x7e, 0x84, 0x9a, 0xea, 0x99, 0x11, 0x46, 0x46, 0x82, 0xc5, 0x48, 0x5d,
-	0xa7, 0xce, 0x39, 0x5d, 0xee, 0xaa, 0x32, 0xfc, 0x1f, 0x0a, 0x1d, 0xc8, 0x15, 0x57, 0xeb, 0x71,
-	0xa2, 0xa4, 0x91, 0x6c, 0xcf, 0x4b, 0x44, 0xe2, 0xf7, 0x1f, 0x44, 0xc2, 0xcc, 0x53, 0x7f, 0x1c,
-	0xc8, 0xe5, 0x24, 0x92, 0x91, 0x9c, 0x50, 0xd6, 0x4f, 0xdf, 0x53, 0x44, 0x01, 0x9d, 0xac, 0x6a,
-	0xf4, 0xa9, 0x06, 0xdd, 0xd7, 0x46, 0x8b, 0xa5, 0xbc, 0xe2, 0x6a, 0x25, 0x02, 0xae, 0xd9, 0x10,
-	0x5a, 0x3c, 0x5e, 0x09, 0x25, 0xe3, 0x25, 0x8f, 0x8d, 0x53, 0x19, 0x56, 0x4e, 0x9b, 0xb3, 0x5f,
-	0x21, 0x76, 0x08, 0x35, 0xa1, 0x75, 0xca, 0x95, 0xb3, 0x4b, 0xc9, 0x3c, 0x62, 0x27, 0xd0, 0x11,
-	0xda, 0x45, 0xe3, 0x30, 0x0d, 0x8c, 0x90, 0xb1, 0x53, 0xc5, 0x74, 0x63, 0xd6, 0x16, 0xfa, 0xb2,
-	0xc4, 0xd8, 0x11, 0xd4, 0x53, 0xcd, 0x5d, 0xb3, 0xd0, 0xce, 0x7f, 0x94, 0xae, 0x61, 0xf8, 0x66,
-	0xa1, 0x33, 0xb5, 0xe2, 0x91, 0xd0, 0x46, 0xad, 0xdd, 0x48, 0x25, 0x81, 0xb3, 0x47, 0xe6, 0xed,
-	0x02, 0x9c, 0x22, 0x96, 0x91, 0x16, 0x18, 0xf1, 0x98, 0x2b, 0x4b, 0xaa, 0x59, 0x52, 0x01, 0x12,
-	0xe9, 0x0e, 0xc0, 0x47, 0xcf, 0x04, 0x73, 0xcb, 0xa8, 0x13, 0xa3, 0x49, 0x08, 0xa5, 0xef, 0x41,
-	0x3b, 0xf0, 0x8c, 0xb7, 0x90, 0x91, 0x25, 0x34, 0xec, 0x2f, 0xcc, 0xb1, 0x92, 0x22, 0x63, 0x74,
-	0x34, 0x96, 0xd2, 0xcc, 0x29, 0x16, 0x23, 0xca, 0x7d, 0xe8, 0x86, 0x9e, 0x9e, 0xfb, 0xd2, 0x53,
-	0xa1, 0x25, 0x01, 0x91, 0x3a, 0x25, 0x4a, 0xb4, 0x63, 0x68, 0x60, 0x63, 0x2c, 0xa1, 0x45, 0x84,
-	0x3a, 0xc6, 0xc5, 0x25, 0x91, 0xb7, 0xe4, 0x6e, 0xee, 0xea, 0xb4, 0xed, 0x25, 0x19, 0x76, 0x61,
-	0x21, 0xd6, 0x47, 0x75, 0x10, 0xc8, 0x34, 0x36, 0xda, 0xe9, 0x50, 0xba, 0x8c, 0x37, 0xde, 0x6b,
-	0x6e, 0x4c, 0xe2, 0x74, 0x37, 0xdf, 0xeb, 0x25, 0x62, 0xec, 0x19, 0x34, 0x74, 0xde, 0x58, 0xa7,
-	0x37, 0xac, 0x9e, 0xb6, 0xce, 0x4e, 0xc6, 0x34, 0x28, 0xe3, 0xcd, 0xae, 0x8f, 0x8b, 0xc3, 0x8b,
-	0x18, 0xa5, 0xb3, 0x52, 0xc4, 0x38, 0x1c, 0x52, 0x91, 0xda, 0x48, 0xe5, 0x45, 0x3c, 0xeb, 0xee,
-	0x4a, 0x84, 0x5c, 0x69, 0xe7, 0x80, 0xec, 0x26, 0xdb, 0xed, 0xa6, 0xa8, 0xb9, 0xb2, 0x92, 0xcb,
-	0x42, 0x61, 0xad, 0x7b, 0xd1, 0x96, 0x54, 0xff, 0x29, 0x74, 0x36, 0x2a, 0x60, 0xfb, 0x50, 0xbd,
-	0xe6, 0xeb, 0x7c, 0xfa, 0xb2, 0x23, 0xeb, 0xc1, 0xde, 0xca, 0x5b, 0xa4, 0x3c, 0x1f, 0x3a, 0x1b,
-	0x3c, 0xd9, 0x7d, 0x5c, 0xe9, 0x4f, 0xe1, 0xf8, 0x8f, 0xf7, 0xfd, 0x8b, 0xd1, 0xe8, 0x4b, 0x05,
-	0xf6, 0x9f, 0x17, 0x7b, 0x35, 0xe3, 0x1f, 0x52, 0xae, 0xcd, 0x5f, 0xec, 0xc3, 0x5d, 0x68, 0xe9,
-	0xf0, 0xda, 0x45, 0x91, 0xce, 0xa6, 0xde, 0xda, 0x02, 0x42, 0x6f, 0x2d, 0x92, 0xcd, 0xbc, 0xd4,
-	0x6e, 0x8c, 0x35, 0xd2, 0x4a, 0xe0, 0xc6, 0x48, 0xfd, 0x0a, 0x23, 0x3b, 0x67, 0x69, 0x56, 0x27,
-	0x4e, 0x41, 0xc8, 0x69, 0x23, 0x68, 0xce, 0x08, 0xbb, 0x40, 0xe8, 0xec, 0x1c, 0x9a, 0x65, 0x49,
-	0xec, 0x11, 0x54, 0xa7, 0xdc, 0xb0, 0xa3, 0xfc, 0xd1, 0x7f, 0xaf, 0xb5, 0x7f, 0xb0, 0xb5, 0x1b,
-	0xe7, 0xa3, 0x9b, 0x6f, 0x83, 0x9d, 0x5b, 0xfc, 0x6e, 0xbe, 0x0f, 0x2a, 0xb7, 0xf8, 0x7d, 0xc5,
-	0xef, 0xf3, 0x8f, 0xc1, 0xce, 0xbb, 0x86, 0x24, 0x66, 0xe2, 0xfb, 0x35, 0xfa, 0x43, 0x78, 0xf8,
-	0x33, 0x00, 0x00, 0xff, 0xff, 0xe1, 0x89, 0x98, 0x8a, 0x59, 0x04, 0x00, 0x00,
+	// 793 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x94, 0x55, 0xdd, 0x6a, 0xdb, 0x4a,
+	0x10, 0x8e, 0xe3, 0x13, 0xff, 0x8c, 0xed, 0x24, 0x6c, 0xfe, 0x14, 0xc3, 0xc9, 0xc9, 0x71, 0x38,
+	0x90, 0x8b, 0x73, 0x64, 0xc8, 0x21, 0x25, 0xa4, 0x85, 0x42, 0xd2, 0x62, 0x0a, 0xa1, 0x4d, 0x9d,
+	0xd2, 0x8b, 0xde, 0x88, 0x95, 0xb4, 0x96, 0x97, 0xc8, 0x5a, 0x57, 0xbb, 0x72, 0xf1, 0x5b, 0xf4,
+	0xb1, 0x72, 0x55, 0xf2, 0x08, 0x6d, 0xf3, 0x22, 0xdd, 0x3f, 0x09, 0x27, 0xb1, 0x69, 0x7b, 0x21,
+	0xd0, 0x7c, 0xf3, 0xcd, 0x37, 0xb3, 0x33, 0xda, 0x11, 0xac, 0x85, 0x94, 0x07, 0x6c, 0x42, 0xd2,
+	0xa9, 0x3b, 0x4e, 0x99, 0x60, 0x68, 0x05, 0x8f, 0xe9, 0xd8, 0x6f, 0xff, 0x17, 0x51, 0x31, 0xcc,
+	0x7c, 0x37, 0x60, 0xa3, 0x6e, 0xc4, 0x22, 0xd6, 0xd5, 0x5e, 0x3f, 0x1b, 0x68, 0x4b, 0x1b, 0xfa,
+	0xcd, 0x44, 0xb5, 0x5b, 0x01, 0x4b, 0x04, 0x49, 0x84, 0x31, 0x3b, 0x5f, 0x6a, 0xb0, 0xfa, 0x46,
+	0x70, 0x3a, 0x62, 0x57, 0x24, 0x9d, 0xd0, 0x80, 0x70, 0xb4, 0x0f, 0x0d, 0x92, 0x4c, 0x68, 0xca,
+	0x92, 0x91, 0xe4, 0x39, 0xa5, 0xfd, 0xd2, 0x61, 0xbd, 0x3f, 0x0b, 0xa1, 0x6d, 0xa8, 0x50, 0xce,
+	0x33, 0x92, 0x3a, 0xcb, 0xda, 0x69, 0x2d, 0x74, 0x00, 0x2d, 0xca, 0x3d, 0x29, 0x1c, 0x66, 0x81,
+	0xa0, 0x2c, 0x71, 0xca, 0xd2, 0x5d, 0xeb, 0x37, 0x29, 0xbf, 0x2c, 0x30, 0xb4, 0x03, 0xd5, 0x8c,
+	0x13, 0x4f, 0xc4, 0xdc, 0xf9, 0x43, 0xbb, 0x2b, 0xd2, 0x7c, 0x17, 0x73, 0x15, 0x9d, 0x92, 0x88,
+	0x72, 0x91, 0x4e, 0xbd, 0x28, 0x1d, 0x07, 0xce, 0x8a, 0x16, 0x6f, 0xe6, 0x60, 0x4f, 0x62, 0x8a,
+	0x14, 0x4b, 0x8b, 0x24, 0x24, 0x35, 0xa4, 0x8a, 0x21, 0xe5, 0xa0, 0x26, 0xfd, 0x09, 0xf0, 0x09,
+	0x8b, 0x60, 0x68, 0x18, 0x55, 0xcd, 0xa8, 0x6b, 0x44, 0xbb, 0xff, 0x86, 0x66, 0x80, 0x05, 0x8e,
+	0x59, 0x64, 0x08, 0x35, 0x73, 0x42, 0x8b, 0x15, 0x14, 0xd3, 0x27, 0x43, 0xa9, 0x5b, 0x8a, 0xc1,
+	0x34, 0xe5, 0x1f, 0x58, 0x0d, 0x31, 0x1f, 0xfa, 0x0c, 0xa7, 0xa1, 0x21, 0x81, 0x26, 0xb5, 0x0a,
+	0x54, 0xd3, 0x76, 0xa1, 0x26, 0xe7, 0x64, 0x08, 0x0d, 0x4d, 0xa8, 0x4a, 0x3b, 0x4f, 0x12, 0xe1,
+	0x11, 0xf1, 0xac, 0xaa, 0xd3, 0x34, 0x49, 0x14, 0x76, 0x6e, 0x20, 0xd4, 0x96, 0xd1, 0x41, 0xc0,
+	0xb2, 0x44, 0x70, 0xa7, 0xa5, 0xdd, 0x85, 0xad, 0x0a, 0xc0, 0x09, 0x8e, 0xa7, 0x82, 0x06, 0xdc,
+	0xe8, 0xaf, 0x9a, 0x02, 0x0a, 0x54, 0x67, 0x79, 0x0e, 0x35, 0x6e, 0x47, 0xeb, 0x6c, 0xee, 0x97,
+	0x0f, 0x1b, 0x47, 0x07, 0xae, 0xfe, 0x72, 0xdc, 0xfb, 0x73, 0x77, 0xf3, 0x97, 0x97, 0x89, 0x6c,
+	0x76, 0xbf, 0x08, 0x42, 0x04, 0xb6, 0x75, 0x99, 0x5c, 0xb0, 0x14, 0x47, 0x44, 0xcd, 0x77, 0x42,
+	0x43, 0x92, 0x72, 0x67, 0x4b, 0xcb, 0x75, 0xe7, 0xcb, 0xf5, 0x64, 0xcc, 0x95, 0x09, 0xb9, 0xcc,
+	0x23, 0x8c, 0xf4, 0x66, 0x34, 0xc7, 0x85, 0x7c, 0xd8, 0xe2, 0x24, 0x1e, 0x78, 0x31, 0xc1, 0x69,
+	0x42, 0x93, 0x48, 0xb5, 0x65, 0x40, 0x23, 0xee, 0x6c, 0xeb, 0x2c, 0xee, 0xa2, 0xa2, 0xe3, 0xc1,
+	0x85, 0x8d, 0x38, 0x37, 0x01, 0x26, 0xc9, 0x06, 0x7f, 0xec, 0x41, 0xcf, 0xa0, 0x9a, 0xab, 0xee,
+	0x68, 0xd5, 0xce, 0x7c, 0xd5, 0x7b, 0x4a, 0x79, 0x48, 0xfb, 0x29, 0xb4, 0xee, 0xf5, 0x08, 0xad,
+	0x43, 0xf9, 0x9a, 0x4c, 0xed, 0x0d, 0x51, 0xaf, 0x68, 0x13, 0x56, 0x26, 0x38, 0xce, 0x88, 0xbd,
+	0x18, 0xc6, 0x38, 0x5d, 0x3e, 0x29, 0xb5, 0x7b, 0xb0, 0xbb, 0xb0, 0x23, 0xbf, 0x25, 0x84, 0xc1,
+	0x59, 0x74, 0xe8, 0x39, 0x3a, 0xdd, 0x59, 0x9d, 0xc6, 0xd1, 0xae, 0x3d, 0xef, 0x63, 0x85, 0xd9,
+	0x14, 0xa7, 0xd0, 0xfc, 0x89, 0xec, 0xc2, 0xf2, 0x3a, 0x77, 0x25, 0x58, 0x7f, 0x91, 0x6f, 0xaa,
+	0x3e, 0xf9, 0x98, 0x11, 0x2e, 0x7e, 0x61, 0xa5, 0xfc, 0x05, 0x0d, 0x1e, 0x5e, 0x7b, 0x32, 0x88,
+	0xab, 0xc5, 0x61, 0x64, 0x41, 0x42, 0xef, 0x0d, 0xa2, 0xd6, 0x06, 0xe3, 0x5e, 0x22, 0x5b, 0xa8,
+	0xb7, 0x8a, 0x5c, 0x3a, 0x8c, 0xbf, 0x96, 0x96, 0xb9, 0xaa, 0x99, 0xaa, 0x53, 0x7e, 0x31, 0x21,
+	0xd1, 0x4b, 0x45, 0x5f, 0x55, 0x8d, 0x9d, 0x4b, 0x08, 0x75, 0xa0, 0x85, 0xc7, 0x63, 0xcf, 0xcf,
+	0x92, 0x30, 0x26, 0x1e, 0x0d, 0xed, 0x66, 0x69, 0x48, 0xf0, 0x4c, 0x63, 0xaf, 0x42, 0xf4, 0x2f,
+	0xa0, 0x19, 0x4e, 0x5e, 0x87, 0xd9, 0x2e, 0xeb, 0x05, 0xd1, 0x56, 0xd3, 0x21, 0xb0, 0x31, 0xdb,
+	0xc2, 0x2b, 0x12, 0xe9, 0x53, 0xc8, 0xb6, 0x08, 0x2a, 0x62, 0x62, 0x4f, 0x68, 0x0c, 0x74, 0x02,
+	0xe0, 0x63, 0xb9, 0xf2, 0x64, 0x2f, 0xd2, 0xe9, 0x83, 0x41, 0xd8, 0x8b, 0x7e, 0x21, 0xd7, 0x97,
+	0x6d, 0x56, 0xbf, 0xae, 0xc8, 0x6f, 0x15, 0xb7, 0x33, 0x04, 0xf4, 0x78, 0x52, 0x6a, 0x29, 0xc4,
+	0x38, 0x89, 0x32, 0xf9, 0x1d, 0xd9, 0x44, 0x85, 0x8d, 0x9e, 0xa8, 0xdb, 0xae, 0x8b, 0xe1, 0x32,
+	0x93, 0xfa, 0xc4, 0xdb, 0x73, 0x46, 0x6e, 0xeb, 0xed, 0x17, 0xdc, 0xa3, 0x33, 0xa8, 0x17, 0x53,
+	0x43, 0xc7, 0x50, 0xee, 0x11, 0x81, 0x76, 0x6c, 0xe4, 0xc3, 0x71, 0xb6, 0xb7, 0xe6, 0xde, 0x9a,
+	0xb3, 0xe3, 0x9b, 0x6f, 0x7b, 0x4b, 0xb7, 0xf2, 0xb9, 0xf9, 0xbe, 0x57, 0xba, 0x95, 0xcf, 0x57,
+	0xf9, 0x7c, 0xbe, 0xdb, 0x5b, 0x82, 0x35, 0xf9, 0x73, 0x72, 0x99, 0x66, 0xbb, 0x6a, 0x53, 0x5d,
+	0x96, 0x3e, 0xd4, 0x8c, 0x39, 0xf6, 0xfd, 0x8a, 0xfe, 0x13, 0xfd, 0xff, 0x23, 0x00, 0x00, 0xff,
+	0xff, 0xe1, 0x21, 0x3e, 0x17, 0xe1, 0x06, 0x00, 0x00,
 }
