@@ -19,6 +19,7 @@ type Driver interface {
 	Put(*models.Catalog) error
 	Update(*models.Catalog) error
 	ChangeStatus(string, apipb.CatalogStatus) error
+	Healthy() error
 }
 
 type RegisteredDriver struct {

@@ -46,3 +46,7 @@ type MongoDBDriver struct {
 func (d MongoDBDriver) Name() string {
 	return MongoDBDriverName
 }
+
+func (d MongoDBDriver) Healthy() error {
+	return d.Session.Ping()
+}

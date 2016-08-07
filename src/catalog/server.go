@@ -15,15 +15,17 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
 	"time"
 )
 
 type Server struct {
-	Config  *Config
-	Storage storage.Driver
-	Oidc    *Client
+	Config   *Config
+	Storage  storage.Driver
+	Oidc     *Client
+	tlsCheck *tlscheck.TLSHealthChecker
 }
 
 func init() {
@@ -34,6 +36,13 @@ func init() {
 		Level:     log.GetLevel(),
 	}
 	grpclog.SetLogger(l)
+}
+
+func (s *Server) Healthy() error {
+	if s.tlsCheck != nil {
+		return s.tlsCheck.Healthy()
+	}
+	return nil
 }
 
 func (s *Server) ListenGRPC() error {
@@ -51,16 +60,19 @@ func (s *Server) ListenGRPC() error {
 			log.Fatalf("server.go: Failed to generate credentials %v", err)
 		}
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
-		go http.ListenAndServe(s.Config.GetHealthPortString(), health.New(tlscheck.New(s.Config.TlsCertFile, s.Config.TlsKeyFile, time.Hour*24*21)))
-	} else {
-		go http.ListenAndServe(s.Config.GetHealthPortString(), health.New())
+		s.tlsCheck = tlscheck.New(s.Config.TlsCertFile, s.Config.TlsKeyFile, time.Hour*24*16)
 	}
 
+	h := health.New(s, s.Storage)
 	grpcServer := grpc.NewServer(opts...)
 	catalogGrpc := &catalogGrpcServer{
 		server: s,
 	}
 	pb.RegisterCatalogServiceServer(grpcServer, catalogGrpc)
+	grpc_health_v1.RegisterHealthServer(grpcServer, h)
+
+	go http.ListenAndServe(s.Config.GetHealthPortString(), h)
+
 	log.Infof("server.go: Binding %s for grpc", grpcPort)
 	//Serve
 	return grpcServer.Serve(lis)

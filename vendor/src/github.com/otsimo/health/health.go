@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"golang.org/x/net/context"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // This file copied from github.com/coreos/pkg
@@ -63,6 +66,18 @@ func (c Checker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	successHandler(w, r)
+}
+
+func (c Checker) Check(ctx context.Context, in *healthpb.HealthCheckRequest) (*healthpb.HealthCheckResponse, error) {
+	if err := Check(c.Checks); err != nil {
+		log.Printf("health check failed: %v", err)
+		return &healthpb.HealthCheckResponse{
+			Status: healthpb.HealthCheckResponse_NOT_SERVING,
+		}, nil
+	}
+	return &healthpb.HealthCheckResponse{
+		Status: healthpb.HealthCheckResponse_SERVING,
+	}, nil
 }
 
 type UnhealthyHandler func(w http.ResponseWriter, r *http.Request, err error)
