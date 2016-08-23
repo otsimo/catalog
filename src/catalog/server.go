@@ -8,6 +8,9 @@ import (
 	"os"
 	"storage"
 
+	"net/http"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/otsimo/health"
 	tlscheck "github.com/otsimo/health/tls"
@@ -16,9 +19,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/health/grpc_health_v1"
-	"gopkg.in/mgo.v2/bson"
-	"net/http"
-	"time"
 )
 
 type Server struct {
@@ -92,7 +92,7 @@ func NewServer(config *Config, driver storage.Driver) *Server {
 	return server
 }
 
-func (s *Server) Insert(c *pb.Catalog, email string, id bson.ObjectId) error {
+func (s *Server) Insert(c *pb.Catalog, email string, id string) error {
 	if c == nil {
 		return errors.New("catalog is null")
 	}

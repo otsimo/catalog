@@ -16,11 +16,11 @@ type Catalog struct {
 	ExpiresAt   int64               `bson:"expires_at"`
 	Items       []apipb.CatalogItem `bson:"items"`
 	AuthorEmail string              `bson:"author_email"`
-	AuthorID    bson.ObjectId       `bson:"author_id"`
+	AuthorID    string              `bson:"author_id"`
 	Status      apipb.CatalogStatus `bson:"status"`
 }
 
-func NewCatalogModel(c *apipb.Catalog, email string, user_id bson.ObjectId) (*Catalog, error) {
+func NewCatalogModel(c *apipb.Catalog, email string, user_id string) (*Catalog, error) {
 	mc := &Catalog{
 		Id:          bson.NewObjectId(),
 		Title:       c.Title,
