@@ -9,11 +9,9 @@ import (
 	"storage"
 
 	"net/http"
-	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/otsimo/health"
-	tlscheck "github.com/otsimo/health/tls"
 	pb "github.com/otsimo/otsimopb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -22,10 +20,9 @@ import (
 )
 
 type Server struct {
-	Config   *Config
-	Storage  storage.Driver
-	Oidc     *Client
-	tlsCheck *tlscheck.TLSHealthChecker
+	Config  *Config
+	Storage storage.Driver
+	Oidc    *Client
 }
 
 func init() {
@@ -39,9 +36,6 @@ func init() {
 }
 
 func (s *Server) Healthy() error {
-	if s.tlsCheck != nil {
-		return s.tlsCheck.Healthy()
-	}
 	return nil
 }
 
@@ -60,7 +54,6 @@ func (s *Server) ListenGRPC() error {
 			log.Fatalf("server.go: Failed to generate credentials %v", err)
 		}
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
-		s.tlsCheck = tlscheck.New(s.Config.TlsCertFile, s.Config.TlsKeyFile, time.Hour*24*16)
 	}
 
 	h := health.New(s, s.Storage)
