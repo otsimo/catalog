@@ -5,12 +5,15 @@ scripts:
 projects:
   - name: catalog
     type: go
-    root: src/cmd/catalog
+    root: src/bin/catalog
     imageName: gcr.io/otsimocloud/catalog
-    dockerfile: ./Dockerfile
+    dockerfile: Dockerfile
     run: ./catalog --debug --storage mongodb
     golang:
-      package: cmd/catalog
+      package: bin/catalog
       cgoEnabled: false
       ldflags: "-w -X main.Version=${BUILD_VERSION}"
       builder: gb
+    develop:
+      ports:
+        - "30857:18857"

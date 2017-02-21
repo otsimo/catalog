@@ -18,9 +18,10 @@ import (
 )
 
 const (
-	OtsimoUserTypeClaim = "otsimo.com/typ"
-	OtsimoAdminUserType = "adm"
-	keySyncWindow       = 5 * time.Second
+	keySyncWindow      = 5 * time.Second
+	UserGroupAdmin     = "otsimo.com/admin"
+	UserGroupOwner     = "otsimo.com/owner"
+	UserGroupDeveloper = "otsimo.com/developer"
 )
 
 func NewOIDCClient(id, secret, discovery string) (*Client, error) {
@@ -68,7 +69,21 @@ func getJWTToken(ctx context.Context) (jose.JWT, error) {
 	return jose.ParseJWT(val)
 }
 
-func (s *catalogGrpcServer) authToken(jwt jose.JWT, mustBeAdmin bool) (string, string, error) {
+func hasOneOf(userGroups, wantedGroups []string) bool {
+	if len(wantedGroups) == 0 {
+		return true
+	}
+	for _, ug := range userGroups {
+		for _, wg := range wantedGroups {
+			if ug == wg {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (s *catalogGrpcServer) authToken(jwt jose.JWT, accessGroups []string) (string, string, error) {
 	claims, err := jwt.Claims()
 	if err != nil {
 		return "", "", fmt.Errorf("auth.go: failed to get claims %v", err)
@@ -96,18 +111,12 @@ func (s *catalogGrpcServer) authToken(jwt jose.JWT, mustBeAdmin bool) (string, s
 	if err != nil || !ok || email == "" {
 		return "", "", fmt.Errorf("auth.go: failed to parse 'email' claim: %v", err)
 	}
-
-	if mustBeAdmin {
-		typ, ok, err := claims.StringClaim(OtsimoUserTypeClaim)
-		if err != nil {
-			return "", "", fmt.Errorf("auth.go: failed to parse '%s' claim: %v", OtsimoUserTypeClaim, err)
-		}
-		if !ok || typ == "" {
-			return "", "", fmt.Errorf("auth.go: missing required '%s' claim", OtsimoUserTypeClaim)
-		}
-		if typ != OtsimoAdminUserType {
-			return "", "", fmt.Errorf("auth.go: user must be admin")
-		}
+	groups, ok, err := claims.StringsClaim("groups")
+	if err != nil {
+		return "", "", fmt.Errorf("auth.go: failed to parse claim: %v", err)
+	}
+	if !hasOneOf(groups, accessGroups) {
+		return "", "", fmt.Errorf("auth.go: user does not have required permission")
 	}
 	return sub, email, nil
 }

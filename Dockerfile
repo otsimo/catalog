@@ -1,5 +1,4 @@
-FROM alpine:3.4
-MAINTAINER Sercan Degirmenci <sercan@otsimo.com>
+FROM alpine:3.5
 
 RUN apk add --update ca-certificates git && rm -rf /var/cache/apk/*
 

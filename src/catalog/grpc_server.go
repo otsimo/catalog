@@ -25,7 +25,7 @@ func (w *catalogGrpcServer) Push(ctx context.Context, in *apipb.Catalog) (*apipb
 		logrus.Errorf("grpc_server.go: failed to get jwt %+v", err)
 		return nil, errors.New("failed to get jwt")
 	}
-	id, email, err := w.authToken(jwt, true)
+	id, email, err := w.authToken(jwt, []string{UserGroupAdmin, UserGroupOwner, UserGroupDeveloper})
 	if err != nil {
 		logrus.Errorf("grpc_server.go: failed to authorize user %+v", err)
 		return nil, errors.New("unauthorized user")
@@ -45,7 +45,7 @@ func (w *catalogGrpcServer) Approve(ctx context.Context, in *apipb.CatalogApprov
 		logrus.Errorf("grpc_server.go: failed to get jwt %+v", err)
 		return nil, errors.New("failed to get jwt")
 	}
-	_, _, err = w.authToken(jwt, true)
+	_, _, err = w.authToken(jwt, []string{UserGroupAdmin, UserGroupOwner})
 	if err != nil {
 		logrus.Errorf("grpc_server.go: failed to authorize user %+v", err)
 		return nil, errors.New("unauthorized user")
